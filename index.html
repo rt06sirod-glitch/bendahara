@@ -324,22 +324,9 @@ body {
   letter-spacing: -0.01em;
 }
 
-/* Keyframe Animations */
+/* Clean, Snappy Transitions (No Overdone Animations) */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes modalPopIn {
-  0% { opacity: 0; transform: translateY(18px) scale(0.95); }
-  60% { transform: translateY(-2px) scale(1.008); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
-}
-@keyframes cardPop {
-  0% { opacity: 0; transform: translateY(8px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-@keyframes pulseBadge {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
-}
+@keyframes modalFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 .backdrop {
   position: fixed; inset: 0;
@@ -347,7 +334,7 @@ body {
   backdrop-filter: blur(8px) saturate(180%);
   display: flex; align-items: center; justify-content: center;
   padding: 18px; z-index: 100;
-  animation: fadeIn 0.22s ease forwards;
+  animation: fadeIn 0.12s ease forwards;
 }
 
 .sheet {
@@ -359,7 +346,7 @@ body {
   max-height: 92vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
-  animation: modalPopIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalFadeIn 0.15s ease forwards;
   border: 1px solid rgba(255,255,255,0.8);
 }
 
@@ -369,7 +356,7 @@ body {
 button, input, select, .chip, .pos-drop-item, .prod-item-row {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
-button:active { transform: scale(0.97); }
+
 
 /* User Mode Top Header */
 .user-topbar {
@@ -437,7 +424,7 @@ button:active { transform: scale(0.97); }
   border-radius: 50%;
   background: #10b981;
   display: inline-block;
-  animation: pulseBadge 1.8s infinite;
+  
 }
 
 .btn-admin-switch {
@@ -459,7 +446,7 @@ button:active { transform: scale(0.97); }
   background: var(--acc-s);
   border-color: var(--acc);
   color: var(--acc);
-  transform: translateY(-1px);
+  
 }
 
 /* User Mode Body State */
@@ -509,7 +496,7 @@ body.mode-user main {
   border-radius: var(--r-lg);
   overflow: hidden;
   box-shadow: var(--shadow);
-  animation: cardPop 0.25s ease;
+  
   transition: all 0.22s ease;
 }
 
@@ -687,7 +674,7 @@ body.mode-user main {
   position: sticky;
   top: 90px;
   box-shadow: var(--shadow);
-  animation: cardPop 0.3s ease;
+  
 }
 
 .checkout-summary-breakdown {
@@ -835,6 +822,250 @@ body.mode-user main {
   border-color: #93c5fd;
   color: #1d4ed8;
   transform: translateY(-1px);
+}
+
+
+/* ==============================================================================
+   CUSTOM QRIS POPUP & NOTA PEMBAYARAN RESMI
+   ============================================================================== */
+.qris-modal-box {
+  text-align: center;
+  padding: 10px 4px 6px;
+}
+
+.qris-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  padding: 4px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.qris-total-val {
+  font-size: 32px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  margin: 4px 0 14px;
+}
+
+.qris-qr-frame {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  display: inline-block;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  margin-bottom: 14px;
+}
+
+.qris-qr-frame img {
+  display: block;
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+}
+
+.qris-timer-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #64748b;
+  margin-bottom: 14px;
+}
+
+.qris-timer-val {
+  font-weight: 800;
+  color: #dc2626;
+  font-family: monospace;
+  font-size: 15px;
+}
+
+.qris-supported-logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.qris-pill {
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+}
+
+.qris-status-live {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #059669;
+  font-weight: 600;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 8px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+}
+
+/* Nota Pembayaran Resmi */
+.nota-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 24px;
+}
+
+.nota-success-badge {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.nota-success-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #dcfce7;
+  color: #16a34a;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+
+.nota-success-badge h3 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.nota-success-badge p {
+  margin: 0;
+  font-size: 12.5px;
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.nota-code-box {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.nota-code-box small {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.nota-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.nota-code-val {
+  font-family: monospace;
+  font-size: 17px;
+  font-weight: 800;
+  color: #1d4ed8;
+  letter-spacing: 1px;
+}
+
+.btn-copy-code {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-copy-code:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.nota-grid-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 16px;
+  font-size: 13px;
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  padding: 14px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+}
+
+.nota-meta-item span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.nota-meta-item b {
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.nota-table-items {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+  font-size: 13px;
+}
+
+.nota-table-items th {
+  background: #f8fafc;
+  color: #64748b;
+  text-align: left;
+  padding: 8px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.nota-table-items td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.nota-tot-row td {
+  font-size: 16px;
+  font-weight: 800;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-top: 1px solid #bfdbfe;
 }
 
 </style>
@@ -1751,6 +1982,227 @@ function renderThermalReceiptHtml(order) {
   `;
 }
 
+
+let qrisPollTimer = null;
+let qrisCountdownTimer = null;
+
+function openCustomQrisModal(data) {
+  const { order_id, gross_amount, qr_url, qr_string, items, warga, receipt_code } = data;
+  
+  // Gunakan gambar QR dari Midtrans jika ada, atau buat QR code via quickchart menggunakan qr_string/payment link
+  const rawQrTarget = qr_string || (posCfg.workerUrl ? (posCfg.workerUrl + '/api/kasir/check-status?order_id=' + order_id) : ('https://simulator.sandbox.midtrans.com/qris/' + order_id));
+  const finalQrImage = qr_url || ('https://quickchart.io/qr?text=' + encodeURIComponent(rawQrTarget) + '&size=260');
+
+  modal(`
+    <div class="mh">
+      <h3>Pembayaran QRIS</h3>
+      <button class="ib" data-a="closeQrisModal">${ico('x')}</button>
+    </div>
+    
+    <div class="qris-modal-box">
+      <div class="qris-header-badge">
+        <span>●</span> Scan QRIS untuk Melakukan Pembayaran
+      </div>
+
+      <div class="qris-total-val">${rp(gross_amount)}</div>
+
+      <div class="qris-qr-frame">
+        <img alt="QRIS Code" src="${finalQrImage}">
+      </div>
+
+      <div class="qris-timer-box">
+        <span>Batas waktu pembayaran:</span>
+        <span class="qris-timer-val" id="qrisTimerText">15:00</span>
+      </div>
+
+      <div class="qris-supported-logos">
+        <span class="qris-pill">BCA</span>
+        <span class="qris-pill">Mandiri</span>
+        <span class="qris-pill">BRI</span>
+        <span class="qris-pill">BNI</span>
+        <span class="qris-pill">GoPay</span>
+        <span class="qris-pill">OVO</span>
+        <span class="qris-pill">ShopeePay</span>
+        <span class="qris-pill">Dana</span>
+      </div>
+
+      <div class="qris-status-live">
+        <span>Menunggu pembayaran warga via QRIS...</span>
+      </div>
+    </div>
+
+    <div class="mf" style="justify-content:center;gap:10px">
+      <button class="btn ghost" data-a="kposCheckQrisNow" data-oid="${esc(order_id)}">Cek Status Sekarang</button>
+      <button class="btn ghost" data-a="closeQrisModal">Batal</button>
+      ${!posCfg.workerUrl ? `<button class="btn" data-a="kposSimulateQrisPaid" data-oid="${esc(order_id)}">Simulasi Lunas (Tes)</button>` : ''}
+    </div>
+  `);
+
+  // Start 15 minute countdown
+  let timeLeft = 15 * 60;
+  clearInterval(qrisCountdownTimer);
+  qrisCountdownTimer = setInterval(() => {
+    timeLeft--;
+    if (timeLeft <= 0) {
+      clearInterval(qrisCountdownTimer);
+      clearInterval(qrisPollTimer);
+      closeModal();
+      toast('Waktu pembayaran QRIS telah habis.');
+      return;
+    }
+    const m = Math.floor(timeLeft / 60);
+    const s = timeLeft % 60;
+    const el = document.getElementById('qrisTimerText');
+    if (el) el.textContent = pad2(m) + ':' + pad2(s);
+  }, 1000);
+
+  // Start real-time background status poller every 2.5s
+  clearInterval(qrisPollTimer);
+  qrisPollTimer = setInterval(async () => {
+    if (!posCfg.workerUrl) return;
+    try {
+      const res = await fetch(posCfg.workerUrl + '/api/kasir/check-status?order_id=' + encodeURIComponent(order_id));
+      if (!res.ok) return;
+      const st = await res.json();
+      if (st.payment_status === 'settlement') {
+        clearInterval(qrisPollTimer);
+        clearInterval(qrisCountdownTimer);
+        closeModal();
+        toast('Pembayaran QRIS Berhasil Terverifikasi!');
+
+        const orderData = {
+          order_id: order_id,
+          receipt_code: receipt_code || st.receipt_code,
+          warga_id: warga ? warga.id : '',
+          warga_nama: warga ? warga.nama : (st.warga_nama || 'Warga'),
+          warga_alamat: warga ? warga.alamat : (st.warga_alamat || '-'),
+          gross_amount: gross_amount,
+          payment_method: 'midtrans',
+          payment_status: 'settlement',
+          payment_type: st.payment_type || 'qris',
+          items: items,
+          cashier_name: posCfg.cashierName,
+          settled_at: new Date().toISOString(),
+          created_at: new Date().toISOString()
+        };
+
+        // Update local database
+        const today = todayStr();
+        items.forEach(it => {
+          S.paid[it.key] = { d: today, a: it.amt };
+        });
+        save();
+        savePosOrderHistory(orderData);
+
+        // Reset search selection
+        ui.kposWid = null;
+        ui.kposSel = new Set();
+        render();
+
+        // Tampilkan Nota Pembayaran Resmi otomatis
+        openNotaModal(orderData);
+      }
+    } catch(e) {}
+  }, 2500);
+}
+
+function openNotaModal(order) {
+  ui.kposActiveOrder = order;
+  const orgName = S.org.name || 'Paguyuban Warga';
+  const nowStr = order.settled_at ? new Date(order.settled_at).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+  const items = order.items || order.items_detail || [];
+  const qrUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent((posCfg.workerUrl || window.location.origin) + '/api/kasir/receipt?code=' + (order.receipt_code || order.order_id)) + '&size=140';
+
+  modal(`
+    <div class="mh">
+      <h3>Nota Bukti Pembayaran</h3>
+      <button class="ib" data-a="close">${ico('x')}</button>
+    </div>
+
+    <div class="nota-card" id="posReceiptArea">
+      <div class="nota-success-badge">
+        <div class="nota-success-icon">✓</div>
+        <h3>PEMBAYARAN BERHASIL</h3>
+        <p>LUNAS / TERVERIFIKASI SISTEM</p>
+      </div>
+
+      <!-- KODE TRANSAKSI RESMI -->
+      <div class="nota-code-box">
+        <small>Kode Transaksi / No. Order</small>
+        <div class="nota-code-row">
+          <span class="nota-code-val" id="trxCodeText">${esc(order.order_id)}</span>
+          <button class="btn-copy-code" data-a="copyTrxCode" data-c="${esc(order.order_id)}">Salin</button>
+        </div>
+        <div style="font-size:11.5px;color:#64748b;margin-top:4px">
+          Kode Verifikasi: <b>${esc(order.receipt_code || order.order_id)}</b>
+        </div>
+      </div>
+
+      <!-- Detail Info Transaksi -->
+      <div class="nota-grid-meta">
+        <div class="nota-meta-item">
+          <span>Waktu Transaksi</span>
+          <b>${esc(nowStr)}</b>
+        </div>
+        <div class="nota-meta-item">
+          <span>Metode Pembayaran</span>
+          <b>${order.payment_method === 'cash' ? 'TUNAI DI POS' : 'QRIS (' + (order.payment_type || 'ONLINE').toUpperCase() + ')'}</b>
+        </div>
+        <div class="nota-meta-item">
+          <span>Nama Warga</span>
+          <b>${esc(order.warga_nama)}</b>
+        </div>
+        <div class="nota-meta-item">
+          <span>Nomor Rumah / Blok</span>
+          <b>${esc(order.warga_alamat || '-')}</b>
+        </div>
+      </div>
+
+      <!-- Rincian Item Tagihan -->
+      <table class="nota-table-items">
+        <thead>
+          <tr>
+            <th>Rincian Tagihan</th>
+            <th style="text-align:right">Nominal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${items.map(it => `
+            <tr>
+              <td>
+                <b>${esc(it.label)}</b>
+                <div style="font-size:11px;color:#64748b">${it.type === 'kas' ? 'Kas Paguyuban' : it.type === 'dayak' ? 'Gaji Dayak' : 'Tambahan'}</div>
+              </td>
+              <td style="text-align:right;font-weight:700">${rp(it.amt)}</td>
+            </tr>
+          `).join('')}
+          <tr class="nota-tot-row">
+            <td>TOTAL LUNAS</td>
+            <td style="text-align:right">${rp(order.gross_amount)}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- Footer QR Verifikasi & Informasi -->
+      <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px dashed #cbd5e1;padding-top:14px;gap:12px">
+        <div style="font-size:11.5px;color:#64748b;line-height:1.4">
+          <b>${esc(orgName)}</b><br>
+          Simpan nota ini sebagai tanda bukti sah.<br>
+          Terima kasih atas pembayaran Anda.
+        </div>
+        <img alt="QR Verifikasi" src="${qrUrl}" style="width:72px;height:72px;border-radius:6px;border:1px solid #e2e8f0;flex:none">
+      </div>
+    </div>
+
+    <!-- Tombol Aksi Nota -->
+    <div class="mf" style="justify-content:center;gap:10px;margin-top:18px">
+      <button class="btn" data-a="kposPrintReceipt">${ico('printer', 16)}Cetak Nota Struk</button>
+      <button class="btn ghost" data-a="kposShareReceipt">${ico('share', 16)}Kirim WhatsApp</button>
+      <button class="btn ghost" data-a="close">Selesai</button>
+    </div>
+  `, 'wide');
+}
+
 function openReceiptModal(order) {
   ui.kposActiveOrder = order;
   modal(`
@@ -2223,7 +2675,7 @@ async function syncSettlementOrder(orderId, dues, w, grossAmount, receiptCode, p
   ui.kposWid = null;
   ui.kposSel = new Set();
   render();
-  openReceiptModal(orderData);
+  openNotaModal(orderData);
 }
 
 // Background status poller saat status pending di layar kasir
@@ -2707,7 +3159,7 @@ const ACT = {
     render();
 
     toast('Pembayaran tunai berhasil dicatat!');
-    openReceiptModal(orderData);
+    openNotaModal(orderData);
   },
   async kposSubmitMidtrans() {
     const w = S.warga.find(x => x.id === ui.kposWid);
@@ -2759,12 +3211,12 @@ const ACT = {
         ui.kposSel = new Set();
         render();
         toast('Simulasi Midtrans Berhasil!');
-        openReceiptModal(orderData);
+        openNotaModal(orderData);
       }
       return;
     }
 
-    toast('Menyiapkan pembayaran Midtrans...');
+    toast('Menyiapkan kode QRIS...');
     try {
       const res = await fetch(posCfg.workerUrl + '/api/kasir/create-payment', {
         method: 'POST',
@@ -2785,32 +3237,16 @@ const ACT = {
       }
 
       const paymentRes = await res.json();
-      const snapToken = paymentRes.snap_token;
-      const orderId = paymentRes.order_id;
-      const receiptCode = paymentRes.receipt_code;
-
-      if (!window.snap || !window.snap.pay) {
-        throw new Error('Pustaka Midtrans Snap JS belum selesai dimuat. Coba beberapa detik lagi.');
-      }
-
-      // Buka Snap Payment Modal
-      window.snap.pay(snapToken, {
-        onSuccess: async function(result) {
-          toast('Pembayaran Midtrans Berhasil!');
-          // Sinkronisasi status
-          await syncSettlementOrder(orderId, dues, w, grossAmount, receiptCode, result.payment_type || 'qris');
-        },
-        onPending: function(result) {
-          toast('Menunggu pembayaran warga via QRIS/VA...');
-          startStatusPolling(orderId, dues, w, grossAmount, receiptCode);
-        },
-        onError: function(result) {
-          toast('Pembayaran Midtrans gagal atau dibatalkan.');
-        },
-        onClose: function() {
-          toast('Jendela pembayaran Midtrans ditutup.');
-          startStatusPolling(orderId, dues, w, grossAmount, receiptCode);
-        }
+      
+      // Buka Popup QRIS Custom In-App
+      openCustomQrisModal({
+        order_id: paymentRes.order_id,
+        gross_amount: grossAmount,
+        qr_url: paymentRes.qr_url,
+        qr_string: paymentRes.qr_string,
+        items: dues,
+        warga: w,
+        receipt_code: paymentRes.receipt_code
       });
 
     } catch(e) {

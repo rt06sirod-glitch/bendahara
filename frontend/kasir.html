@@ -1,0 +1,821 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kasir Pos - Tagihan Warga</title>
+<!-- Midtrans Snap JS -->
+<script id="midtrans-snap-script" src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#f4f6fb;--card:#fff;--ink:#1a2035;--mut:#7e869e;--line:#e4e8f1;--acc:#2b59ff;--acc-s:#edf2ff;--ok:#1f9e55;--ok-s:#e7f8ef;--no:#df3838;--no-s:#feebeb;--warn:#c4820a;--warn-s:#fef7e6;--r:16px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+body.lock{overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:30}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:var(--acc);color:#fff;display:inline-flex;align-items:center;justify-content:center}
+.brand h1{margin:0;font-size:16px;font-weight:700}
+.brand p{margin:0;font-size:11.5px;color:var(--mut)}
+.top-actions{display:flex;align-items:center;gap:8px}
+
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;background:var(--acc);color:#fff;padding:9px 16px;border-radius:12px;cursor:pointer;font-weight:600;font-size:13.5px}
+.btn:hover{filter:brightness(.96)}
+.btn.ghost{background:var(--acc-s);color:var(--acc)}
+.btn.sm{padding:6px 12px;font-size:12px;border-radius:9px}
+.btn.danger{background:var(--no-s);color:var(--no)}
+
+.pos-wrapper{max-width:1200px;margin:20px auto;padding:0 16px}
+.pos-layout{display:grid;grid-template-columns:1.2fr 0.8fr;gap:20px}
+@media(max-width:900px){.pos-layout{grid-template-columns:1fr}}
+
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.02)}
+.search-card{position:relative}
+.search-input-wrap{position:relative}
+.search-input-wrap input{width:100%;height:52px;font-size:16px;padding:12px 46px;border:2px solid var(--line);border-radius:14px;background:#fff;transition:.2s}
+.search-input-wrap input:focus{outline:0;border-color:var(--acc);box-shadow:0 0 0 4px var(--acc-s)}
+.search-input-wrap .search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--mut)}
+.search-input-wrap .clear-btn{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:0;color:var(--mut);cursor:pointer;font-size:16px}
+
+.dropdown-results{position:absolute;left:20px;right:20px;top:82px;background:#fff;border:1px solid var(--line);border-radius:14px;max-height:340px;overflow-y:auto;box-shadow:0 18px 40px rgba(0,0,0,.12);z-index:50}
+.res-item{display:flex;align-items:center;gap:14px;padding:12px 16px;border:0;background:none;width:100%;text-align:left;cursor:pointer;border-bottom:1px solid var(--line)}
+.res-item:last-child{border-bottom:0}
+.res-item:hover{background:var(--acc-s)}
+.res-addr{background:var(--acc);color:#fff;font-weight:700;font-size:13px;padding:4px 10px;border-radius:8px;flex:none}
+.res-info{flex:1;min-width:0}
+.res-info b{display:block;font-size:14.5px;color:var(--ink)}
+.res-info small{color:var(--mut);font-size:12px}
+.res-amt{text-align:right}
+.res-amt b{color:var(--no);font-size:14px;display:block}
+.res-amt small{color:var(--mut);font-size:11px}
+
+.w-banner{background:linear-gradient(135deg, #f0f4ff 0%, #e2ebff 100%);border:1px solid #c9d8fe;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;margin-top:16px;gap:12px;flex-wrap:wrap}
+.w-profile{display:flex;align-items:center;gap:14px}
+.w-av{width:48px;height:48px;border-radius:50%;background:var(--acc);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:18px}
+.w-meta h2{margin:0 0 2px;font-size:18px}
+.w-meta p{margin:0;font-size:13px;color:var(--mut);display:flex;gap:8px;align-items:center}
+
+.dues-list{margin-top:16px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#fff}
+.dues-head{background:#fafbfe;padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.due-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .15s}
+.due-row:last-child{border-bottom:0}
+.due-row:hover{background:#f8faff}
+.due-row.checked{background:#edf2ff}
+.due-desc{flex:1;min-width:0}
+.due-desc b{display:block;font-size:14px}
+.due-desc small{color:var(--mut);font-size:12px}
+.due-amt{font-weight:700;font-size:14.5px}
+
+/* Pay Box */
+.tot-panel{background:var(--acc-s);border:1px solid #cddafd;border-radius:16px;padding:20px;text-align:center;margin-bottom:18px}
+.tot-panel small{color:var(--acc);font-weight:700;text-transform:uppercase;font-size:12px;letter-spacing:.6px}
+.tot-val{font-size:36px;font-weight:800;color:#18327d;margin:4px 0}
+.tot-cnt{color:var(--mut);font-size:13px}
+
+.pay-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--bg);padding:4px;border-radius:12px;margin-bottom:18px}
+.pay-tab{border:0;background:none;padding:10px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;color:var(--mut);transition:.15s}
+.pay-tab.on{background:#fff;color:var(--acc);box-shadow:0 2px 6px rgba(0,0,0,.06)}
+
+.cash-box input{width:100%;height:48px;font-size:20px;font-weight:700;padding:10px 14px 10px 42px;border:1px solid var(--line);border-radius:12px}
+.cash-input-wrap{position:relative;margin-bottom:10px}
+.cash-input-wrap span{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:16px;font-weight:700;color:var(--mut)}
+.cash-chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.cash-chips button{padding:8px 4px;font-size:12px;font-weight:600;border:1px solid var(--line);background:#fff;border-radius:8px;cursor:pointer}
+.cash-chips button:hover{background:var(--acc-s);color:var(--acc);border-color:var(--acc)}
+
+.change-card{background:#fafbfe;border:1px dashed var(--line);border-radius:12px;padding:14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.change-card small{display:block;color:var(--mut);font-size:12.5px}
+.change-card b{font-size:20px;font-weight:800}
+.change-card.ok b{color:var(--ok)}
+.change-card.short b{color:var(--no)}
+
+.btn-pay{width:100%;height:52px;font-size:16px;font-weight:700;border-radius:14px;justify-content:center}
+.btn-pay.midtrans{background:linear-gradient(135deg, #1b6af5 0%, #0a49bd 100%)}
+.btn-pay.cash{background:linear-gradient(135deg, #249d5a 0%, #15733e 100%)}
+.btn-pay:disabled{opacity:.4;cursor:not-allowed;filter:grayscale(1)}
+
+/* Thermal Receipt */
+.thermal-receipt{width:100%;max-width:320px;margin:0 auto;background:#fff;padding:18px 16px;font-family:'Courier New',Courier,monospace;color:#111;font-size:12px;line-height:1.35;box-shadow:0 6px 24px rgba(0,0,0,.08);border:1px dashed #ccc;border-radius:6px}
+.thermal-receipt .th-center{text-align:center}
+.thermal-receipt .th-title{font-size:15px;font-weight:bold;margin:0 0 2px}
+.thermal-receipt .th-sub{font-size:11px;color:#555;margin:0 0 8px}
+.thermal-receipt .th-div{border-top:1px dashed #777;margin:8px 0}
+.thermal-receipt .th-div-double{border-top:2px double #444;margin:8px 0}
+.thermal-receipt .th-row{display:flex;justify-content:space-between;margin:3px 0}
+.thermal-receipt .th-bold{font-weight:bold}
+.thermal-receipt .th-item-name{font-weight:bold}
+.thermal-receipt .th-qr{text-align:center;margin:12px 0 6px}
+.thermal-receipt .th-qr img{display:inline-block;width:96px;height:96px;border-radius:6px}
+.thermal-receipt .th-code{font-size:10.5px;letter-spacing:1px;text-align:center;color:#444}
+.thermal-receipt .th-foot{font-size:10.5px;color:#666;text-align:center;margin-top:10px}
+
+.backdrop{position:fixed;inset:0;background:rgba(26,32,53,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;z-index:90}
+.modal{background:#fff;border-radius:20px;padding:22px;width:100%;max-width:440px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.modal-head h3{margin:0;font-size:17px}
+
+#toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,20px);background:#1a2035;color:#fff;padding:10px 20px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s;z-index:100;font-size:13.5px}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media print {
+  body.printing-receipt .topbar,
+  body.printing-receipt .pos-wrapper,
+  body.printing-receipt #toast,
+  body.printing-receipt .modal-head,
+  body.printing-receipt .modal-foot { display:none !important; }
+  body.printing-receipt .backdrop { position:static !important; background:none !important; padding:0 !important; }
+  body.printing-receipt .modal { box-shadow:none !important; border:0 !important; max-width:100% !important; padding:0 !important; }
+  body.printing-receipt .thermal-receipt { box-shadow:none !important; border:0 !important; max-width:80mm !important; width:100% !important; padding:0 !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h12M6 12h4M14 12h4M6 16h8"/></svg>
+    </div>
+    <div>
+      <h1 id="appTitle">Kasir Pos Tagihan Warga</h1>
+      <p id="appSubtitle">Pos Satpam Utama · Sistem Kasir Online Midtrans &amp; Tunai</p>
+    </div>
+  </div>
+  <div class="top-actions">
+    <a href="index.html" class="btn sm ghost">Buka Aplikasi Utama</a>
+    <button class="btn sm ghost" onclick="openSettingsModal()">⚙ Pengaturan</button>
+  </div>
+</header>
+
+<main class="pos-wrapper">
+  <div class="pos-layout">
+    <!-- Kolom Kiri -->
+    <div>
+      <div class="card search-card">
+        <label style="display:block;font-size:12px;font-weight:700;color:var(--mut);margin-bottom:6px">PENCARIAN WARGA</label>
+        <div class="search-input-wrap">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" placeholder="Cari nomor rumah / blok (mis. A1, B3, C14) atau nama warga..." oninput="handleSearch(this.value)" autocomplete="off">
+          <button class="clear-btn" onclick="clearSearch()" style="display:none" id="clearBtn">✕</button>
+        </div>
+
+        <div class="dropdown-results" id="dropdownResults" style="display:none"></div>
+
+        <div id="selectedWargaContainer"></div>
+      </div>
+
+      <div id="duesContainer"></div>
+    </div>
+
+    <!-- Kolom Kanan: Pembayaran -->
+    <div>
+      <div class="card" style="position:sticky;top:80px">
+        <div class="tot-panel">
+          <small>TOTAL YANG HARUS DIBAYAR</small>
+          <div class="tot-val" id="grandTotalText">Rp 0</div>
+          <div class="tot-cnt" id="itemCountText">0 tagihan dipilih</div>
+        </div>
+
+        <div class="pay-tabs">
+          <button class="pay-tab on" id="tabMidtrans" onclick="setPaymentMethod('midtrans')">Midtrans (QRIS / Online)</button>
+          <button class="pay-tab" id="tabCash" onclick="setPaymentMethod('cash')">Tunai (Cash di Pos)</button>
+        </div>
+
+        <!-- Panel Midtrans -->
+        <div id="panelMidtrans">
+          <p style="font-size:13px;color:var(--mut);margin:0 0 16px">
+            Warga dapat membayar via QRIS (BCA, Mandiri, BRI, BNI, GoPay, OVO, ShopeePay) langsung di layar pos atau transfer VA. Status terverifikasi otomatis.
+          </p>
+          <button class="btn btn-pay midtrans" id="btnPayMidtrans" onclick="processMidtrans()" disabled>
+            Bayar via Midtrans (QRIS)
+          </button>
+        </div>
+
+        <!-- Panel Cash -->
+        <div id="panelCash" style="display:none">
+          <div class="cash-box">
+            <label style="display:block;font-size:12px;font-weight:700;color:var(--mut);margin-bottom:4px">UANG DITERIMA DARI WARGA</label>
+            <div class="cash-input-wrap">
+              <span>Rp</span>
+              <input id="cashInput" type="number" inputmode="numeric" placeholder="0" oninput="calculateChange()">
+            </div>
+            <div class="cash-chips">
+              <button onclick="setQuickCash('exact')">Uang Pas</button>
+              <button onclick="setQuickCash(50000)">50.000</button>
+              <button onclick="setQuickCash(100000)">100.000</button>
+              <button onclick="setQuickCash(200000)">200.000</button>
+            </div>
+            <div class="change-card" id="changeCard">
+              <div>
+                <small id="changeLabel">Kembalian</small>
+                <b id="changeText">Rp 0</b>
+              </div>
+              <span id="changeBadge" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;background:var(--ok-s);color:var(--ok)">Cukup</span>
+            </div>
+            <button class="btn btn-pay cash" id="btnPayCash" onclick="processCash()" disabled>
+              Konfirmasi Pembayaran Tunai
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="modalContainer"></div>
+<div id="toast"></div>
+
+<script>
+// State
+let allWarga = [];
+let allItems = {};
+let allTambahan = [];
+let allPaid = {};
+let orgSettings = { name: 'Paguyuban Warga', pay: '' };
+let selectedW = null;
+let unpaidDues = [];
+let selectedKeys = new Set();
+let paymentMethod = 'midtrans';
+
+const KPOS_CFG_KEY = 'tagihan-warga-kpos-cfg';
+const CFG_KEY = 'tagihan-warga-sb';
+
+function getPosConfig() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KPOS_CFG_KEY) || '{}');
+    return {
+      workerUrl: (s.workerUrl || '').replace(/\/+$/, ''),
+      clientKey: s.clientKey || '',
+      isProd: !!s.isProd,
+      cashierName: s.cashierName || 'Pos Satpam Utama'
+    };
+  } catch(e) {
+    return { workerUrl: '', clientKey: '', isProd: false, cashierName: 'Pos Satpam Utama' };
+  }
+}
+let posCfg = getPosConfig();
+
+function getSbConfig() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY) || '{}'); }
+  catch(e) { return {}; }
+}
+
+const rp = n => 'Rp ' + Math.round(n || 0).toLocaleString('id-ID');
+const pad2 = n => String(n).padStart(2, '0');
+const curYM = () => { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1); };
+const mLabel = ym => {
+  const M = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  return M[+ym.slice(5) - 1] + ' ' + ym.slice(0, 4);
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Load Supabase Data
+async function loadData() {
+  const sbCfg = getSbConfig();
+  if (!sbCfg.url || !sbCfg.key || !window.supabase) {
+    console.warn('Supabase config not found in localStorage');
+    return;
+  }
+  try {
+    const sb = window.supabase.createClient(sbCfg.url, sbCfg.key);
+    const [wRes, iRes, pRes, sRes] = await Promise.all([
+      sb.from('warga').select('*').order('sort'),
+      sb.from('items').select('*'),
+      sb.from('payments').select('*'),
+      sb.from('settings').select('*').limit(1)
+    ]);
+    if (wRes.data) allWarga = wRes.data;
+    if (sRes.data && sRes.data[0]) {
+      orgSettings.name = sRes.data[0].org_name || 'Paguyuban Warga';
+      orgSettings.pay = sRes.data[0].pay_info || '';
+      document.getElementById('appTitle').textContent = orgSettings.name + ' - Kasir Pos';
+    }
+    if (iRes.data) {
+      iRes.data.forEach(r => {
+        const prices = { singgah: r.price_singgah, kontrak: r.price_kontrak, tetap: r.price_tetap };
+        if (r.kind === 'kas') allItems.kas = { label: r.label, prices };
+        else if (r.kind === 'dayak') allItems.dayak = { label: r.label, prices };
+        else allTambahan.push({ id: r.id, label: r.label, prices, target: r.target });
+      });
+    }
+    if (pRes.data) {
+      pRes.data.forEach(r => { allPaid[r.key] = true; });
+    }
+  } catch(e) {
+    console.error('Error loading Supabase:', e);
+  }
+}
+
+// Search Logic
+const alnum = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const stripAddr = s => String(s || '').toLowerCase().replace(/\b(blok|block|no|nomor|rt|rw|jl|jalan|rumah)\b\.?/g, ' ');
+function matchW(w, q) {
+  const toks = String(q || '').toLowerCase().split(/[\s,]+/).filter(Boolean);
+  if (!toks.length) return true;
+  const hay = [w.nama, w.alamat, w.status].join(' ').toLowerCase();
+  const compact = alnum(hay), addr = alnum(stripAddr(w.alamat));
+  const whole = alnum(q);
+  if (whole && (addr.includes(whole) || compact.includes(whole))) return true;
+  return toks.every(t => { const c = alnum(t); return hay.includes(t) || (c && (compact.includes(c) || addr.includes(c))); });
+}
+
+function handleSearch(val) {
+  const q = (val || '').trim();
+  const clearBtn = document.getElementById('clearBtn');
+  const dropdown = document.getElementById('dropdownResults');
+  clearBtn.style.display = q ? 'block' : 'none';
+
+  if (!q) {
+    dropdown.style.display = 'none';
+    return;
+  }
+
+  const matches = allWarga.filter(w => matchW(w, q)).slice(0, 8);
+  if (!matches.length) {
+    dropdown.innerHTML = '<div style="padding:16px;text-align:center;color:var(--mut)">Tidak ada warga yang cocok</div>';
+    dropdown.style.display = 'block';
+    return;
+  }
+
+  dropdown.innerHTML = matches.map(w => `
+    <button class="res-item" onclick="selectWarga('${w.id}')">
+      <span class="res-addr">${w.alamat || '–'}</span>
+      <div class="res-info">
+        <b>${w.nama}</b>
+        <small>${w.status.toUpperCase()} · ${w.wa || 'Tanpa WA'}</small>
+      </div>
+    </button>
+  `).join('');
+  dropdown.style.display = 'block';
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('clearBtn').style.display = 'none';
+  document.getElementById('dropdownResults').style.display = 'none';
+}
+
+function selectWarga(id) {
+  selectedW = allWarga.find(x => x.id === id);
+  document.getElementById('dropdownResults').style.display = 'none';
+  if (!selectedW) return;
+
+  // Render selected resident card
+  document.getElementById('selectedWargaContainer').innerHTML = `
+    <div class="w-banner">
+      <div class="w-profile">
+        <div class="w-av">${selectedW.nama.charAt(0).toUpperCase()}</div>
+        <div class="w-meta">
+          <h2>${selectedW.nama}</h2>
+          <p>
+            <span><b>Blok/No:</b> ${selectedW.alamat || '-'}</span>
+            <span>· Status: ${selectedW.status.toUpperCase()}</span>
+            ${selectedW.wa ? '<span>· WA: ' + selectedW.wa + '</span>' : ''}
+          </p>
+        </div>
+      </div>
+      <button class="btn sm ghost" onclick="deselectWarga()">Ganti Warga</button>
+    </div>
+  `;
+
+  // Calculate unpaid dues
+  unpaidDues = [];
+  const c = curYM();
+  const types = ['kas', 'dayak'];
+  types.forEach(t => {
+    const f = selectedW[t + '_from'] || '2026-01';
+    const to = selectedW[t + '_to'] || c;
+    let y = +f.slice(0,4), m = +f.slice(5);
+    const y2 = +to.slice(0,4), m2 = +to.slice(5);
+    while (y < y2 || (y === y2 && m <= m2)) {
+      const ym = y + '-' + pad2(m);
+      if (ym <= c) {
+        const k = t + '|' + selectedW.id + '|' + ym;
+        if (!allPaid[k]) {
+          const it = allItems[t];
+          const price = it && it.prices ? (it.prices[selectedW.status] || 0) : 0;
+          unpaidDues.push({
+            key: k,
+            type: t,
+            ym: ym,
+            amt: price,
+            label: (t === 'kas' ? 'Kas Warga' : 'Gaji Dayak') + ' (' + mLabel(ym) + ')',
+            pos: t
+          });
+        }
+      }
+      m++; if (m > 12) { m = 1; y++; }
+    }
+  });
+
+  allTambahan.forEach(it => {
+    const isTarget = !it.target || it.target === 'all' || (Array.isArray(it.target) && it.target.includes(selectedW.id));
+    if (isTarget) {
+      const k = 't|' + it.id + '|' + selectedW.id;
+      if (!allPaid[k]) {
+        const price = it.prices ? (it.prices[selectedW.status] || 0) : 0;
+        unpaidDues.push({
+          key: k,
+          type: 't',
+          id: it.id,
+          amt: price,
+          label: it.label + ' (Iuran Tambahan)',
+          pos: it.id
+        });
+      }
+    }
+  });
+
+  // Select all dues by default
+  selectedKeys = new Set(unpaidDues.map(d => d.key));
+  renderDues();
+  updateTotals();
+}
+
+function deselectWarga() {
+  selectedW = null;
+  unpaidDues = [];
+  selectedKeys.clear();
+  document.getElementById('selectedWargaContainer').innerHTML = '';
+  document.getElementById('duesContainer').innerHTML = '';
+  updateTotals();
+}
+
+function renderDues() {
+  const container = document.getElementById('duesContainer');
+  if (!unpaidDues.length) {
+    container.innerHTML = `
+      <div class="card" style="margin-top:16px;text-align:center;padding:32px">
+        <h3 style="color:var(--ok);margin:0 0 6px">Semua Iuran Sudah Lunas!</h3>
+        <p style="color:var(--mut);margin:0">Warga ini tidak memiliki tunggakan iuran.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="dues-list">
+      <div class="dues-head">
+        <b>Daftar Tagihan Belum Lunas (${unpaidDues.length})</b>
+        <div style="display:flex;gap:6px">
+          <button class="btn sm ghost" onclick="toggleAllDues(true)">Pilih Semua</button>
+          <button class="btn sm ghost" onclick="toggleAllDues(false)">Kosongkan</button>
+        </div>
+      </div>
+      ${unpaidDues.map(d => `
+        <div class="due-row ${selectedKeys.has(d.key) ? 'checked' : ''}" onclick="toggleDue('${d.key}')">
+          <input type="checkbox" ${selectedKeys.has(d.key) ? 'checked' : ''} style="pointer-events:none">
+          <div class="due-desc">
+            <b>${d.label}</b>
+            <small>${d.type === 'kas' ? 'Kas Warga' : d.type === 'dayak' ? 'Gaji Dayak' : 'Tambahan'}</small>
+          </div>
+          <div class="due-amt">${rp(d.amt)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function toggleDue(k) {
+  if (selectedKeys.has(k)) selectedKeys.delete(k);
+  else selectedKeys.add(k);
+  renderDues();
+  updateTotals();
+}
+
+function toggleAllDues(all) {
+  if (all) selectedKeys = new Set(unpaidDues.map(d => d.key));
+  else selectedKeys.clear();
+  renderDues();
+  updateTotals();
+}
+
+function updateTotals() {
+  let total = 0;
+  unpaidDues.forEach(d => { if (selectedKeys.has(d.key)) total += d.amt; });
+  document.getElementById('grandTotalText').textContent = rp(total);
+  document.getElementById('itemCountText').textContent = selectedKeys.size + ' tagihan dipilih';
+
+  const btnMid = document.getElementById('btnPayMidtrans');
+  const btnCash = document.getElementById('btnPayCash');
+  const hasItems = selectedW && total > 0;
+  btnMid.disabled = !hasItems;
+
+  calculateChange();
+}
+
+function setPaymentMethod(method) {
+  paymentMethod = method;
+  document.getElementById('tabMidtrans').className = 'pay-tab ' + (method === 'midtrans' ? 'on' : '');
+  document.getElementById('tabCash').className = 'pay-tab ' + (method === 'cash' ? 'on' : '');
+  document.getElementById('panelMidtrans').style.display = method === 'midtrans' ? 'block' : 'none';
+  document.getElementById('panelCash').style.display = method === 'cash' ? 'block' : 'none';
+}
+
+function calculateChange() {
+  let total = 0;
+  unpaidDues.forEach(d => { if (selectedKeys.has(d.key)) total += d.amt; });
+  const cashVal = Number(document.getElementById('cashInput').value) || 0;
+  const change = cashVal - total;
+
+  const card = document.getElementById('changeCard');
+  const text = document.getElementById('changeText');
+  const label = document.getElementById('changeLabel');
+  const badge = document.getElementById('changeBadge');
+  const btnCash = document.getElementById('btnPayCash');
+
+  if (change < 0) {
+    card.className = 'change-card short';
+    label.textContent = 'Uang Masih Kurang';
+    text.textContent = rp(Math.abs(change));
+    badge.className = 'badge b-singgah';
+    badge.textContent = 'Kurang';
+    btnCash.disabled = true;
+  } else {
+    card.className = 'change-card ok';
+    label.textContent = 'Uang Kembalian';
+    text.textContent = rp(change);
+    badge.className = 'badge b-tetap';
+    badge.textContent = 'Cukup';
+    btnCash.disabled = !selectedW || total <= 0 || cashVal < total;
+  }
+}
+
+function setQuickCash(val) {
+  let total = 0;
+  unpaidDues.forEach(d => { if (selectedKeys.has(d.key)) total += d.amt; });
+  if (val === 'exact') {
+    document.getElementById('cashInput').value = total;
+  } else {
+    document.getElementById('cashInput').value = Number(val);
+  }
+  calculateChange();
+}
+
+// Midtrans Payment Execution
+async function processMidtrans() {
+  if (!selectedW) return;
+  const items = unpaidDues.filter(d => selectedKeys.has(d.key));
+  if (!items.length) { toast('Pilih minimal satu tagihan'); return; }
+  const total = items.reduce((s, x) => s + x.amt, 0);
+
+  if (!posCfg.workerUrl) {
+    if (confirm('URL Cloudflare Worker belum diisi di Pengaturan. Ingin jalankan simulasi lunas langsung?')) {
+      finishPaymentSuccess({
+        order_id: 'POS-DEMO-' + Date.now().toString(36).toUpperCase(),
+        receipt_code: 'RCP-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+        warga_id: selectedW.id,
+        warga_nama: selectedW.nama,
+        warga_alamat: selectedW.alamat,
+        gross_amount: total,
+        payment_method: 'midtrans',
+        payment_type: 'qris',
+        items: items
+      });
+    }
+    return;
+  }
+
+  toast('Menyiapkan QRIS / Midtrans...');
+  try {
+    const res = await fetch(posCfg.workerUrl + '/api/kasir/create-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        warga_id: selectedW.id,
+        warga_nama: selectedW.nama,
+        warga_alamat: selectedW.alamat,
+        items: items,
+        payment_method: 'midtrans',
+        cashier_name: posCfg.cashierName
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'HTTP ' + res.status);
+
+    if (window.snap && window.snap.pay) {
+      window.snap.pay(data.snap_token, {
+        onSuccess: function(res) {
+          toast('Pembayaran Midtrans Sukses!');
+          finishPaymentSuccess({
+            order_id: data.order_id,
+            receipt_code: data.receipt_code,
+            warga_id: selectedW.id,
+            warga_nama: selectedW.nama,
+            warga_alamat: selectedW.alamat,
+            gross_amount: total,
+            payment_method: 'midtrans',
+            payment_type: res.payment_type || 'qris',
+            items: items
+          });
+        },
+        onPending: function() {
+          toast('Menunggu warga scan/bayar QRIS...');
+          pollStatus(data.order_id, items, total, data.receipt_code);
+        },
+        onError: function() { toast('Pembayaran Midtrans dibatalkan'); }
+      });
+    }
+  } catch(e) {
+    toast('Gagal: ' + e.message);
+  }
+}
+
+// Cash Payment Execution
+async function processCash() {
+  if (!selectedW) return;
+  const items = unpaidDues.filter(d => selectedKeys.has(d.key));
+  if (!items.length) return;
+  const total = items.reduce((s, x) => s + x.amt, 0);
+
+  const orderData = {
+    order_id: 'POS-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase(),
+    receipt_code: 'RCP-' + Math.random().toString(36).slice(2, 8).toUpperCase(),
+    warga_id: selectedW.id,
+    warga_nama: selectedW.nama,
+    warga_alamat: selectedW.alamat,
+    gross_amount: total,
+    payment_method: 'cash',
+    payment_type: 'cash',
+    items: items,
+    cashier_name: posCfg.cashierName,
+    settled_at: new Date().toISOString()
+  };
+
+  if (posCfg.workerUrl) {
+    try {
+      await fetch(posCfg.workerUrl + '/api/kasir/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          warga_id: selectedW.id,
+          warga_nama: selectedW.nama,
+          warga_alamat: selectedW.alamat,
+          items: items,
+          payment_method: 'cash',
+          cashier_name: posCfg.cashierName
+        })
+      });
+    } catch(e) {}
+  }
+
+  finishPaymentSuccess(orderData);
+}
+
+function finishPaymentSuccess(order) {
+  // Update local memory
+  order.items.forEach(it => { allPaid[it.key] = true; });
+  deselectWarga();
+  openReceiptModal(order);
+}
+
+function pollStatus(orderId, items, total, receiptCode) {
+  if (!posCfg.workerUrl) return;
+  let count = 0;
+  const timer = setInterval(async () => {
+    count++;
+    if (count > 25) { clearInterval(timer); return; }
+    try {
+      const res = await fetch(posCfg.workerUrl + '/api/kasir/check-status?order_id=' + encodeURIComponent(orderId));
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.payment_status === 'settlement') {
+        clearInterval(timer);
+        toast('Pembayaran QRIS Terkonfirmasi Lunas!');
+        finishPaymentSuccess({
+          order_id: orderId,
+          receipt_code: receiptCode,
+          warga_id: selectedW ? selectedW.id : '',
+          warga_nama: data.warga_nama,
+          warga_alamat: data.warga_alamat,
+          gross_amount: total,
+          payment_method: 'midtrans',
+          payment_type: data.payment_type || 'qris',
+          items: items
+        });
+      }
+    } catch(e) {}
+  }, 3000);
+}
+
+// Receipt Modal & Thermal Print
+function openReceiptModal(order) {
+  const qrUrl = 'https://quickchart.io/qr?text=' + encodeURIComponent((posCfg.workerUrl || window.location.origin) + '/api/kasir/receipt?code=' + (order.receipt_code || order.order_id)) + '&size=160';
+  const nowStr = new Date().toLocaleString('id-ID');
+
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="backdrop">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Bukti Pembayaran Pos</h3>
+          <button class="btn sm ghost" onclick="closeModal()">✕</button>
+        </div>
+        <div class="thermal-receipt">
+          <div class="th-center">
+            <div class="th-title">${orgSettings.name}</div>
+            <div class="th-sub">STRUK PEMBAYARAN IURAN POS</div>
+          </div>
+          <div class="th-div"></div>
+          <div class="th-row"><span>No. Order :</span><span class="th-bold">${order.order_id}</span></div>
+          <div class="th-row"><span>Waktu    :</span><span>${nowStr}</span></div>
+          <div class="th-row"><span>Kasir    :</span><span>${order.cashier_name || posCfg.cashierName}</span></div>
+          <div class="th-div"></div>
+          <div class="th-row"><span>Warga    :</span><span class="th-bold">${order.warga_nama}</span></div>
+          <div class="th-row"><span>Blok/No  :</span><span class="th-bold">${order.warga_alamat || '-'}</span></div>
+          <div class="th-div"></div>
+          <div class="th-bold" style="margin-bottom:4px">RINCIAN:</div>
+          ${order.items.map(it => `
+            <div class="th-row">
+              <span class="th-item-name">• ${it.label}</span>
+              <span class="th-bold">${rp(it.amt)}</span>
+            </div>
+          `).join('')}
+          <div class="th-div-double"></div>
+          <div class="th-row th-bold" style="font-size:14px">
+            <span>TOTAL :</span>
+            <span>${rp(order.gross_amount)}</span>
+          </div>
+          <div class="th-row">
+            <span>Metode:</span>
+            <span class="th-bold">${order.payment_method === 'cash' ? 'TUNAI (CASH)' : 'MIDTRANS (' + (order.payment_type || 'QRIS').toUpperCase() + ')'}</span>
+          </div>
+          <div class="th-row">
+            <span>Status:</span>
+            <span class="th-bold" style="color:var(--ok)">LUNAS (TERVERIFIKASI)</span>
+          </div>
+          <div class="th-div"></div>
+          <div class="th-qr">
+            <img src="${qrUrl}">
+            <div class="th-code">KODE: ${order.receipt_code || order.order_id}</div>
+          </div>
+          <div class="th-foot">
+            Simpan struk ini sebagai bukti pembayaran.<br>Terima kasih.
+          </div>
+        </div>
+        <div class="modal-foot" style="display:flex;gap:8px;margin-top:16px;justify-content:center">
+          <button class="btn" onclick="printReceipt()">🖨 Cetak Struk</button>
+          <button class="btn ghost" onclick="closeModal()">Tutup</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function closeModal() {
+  document.getElementById('modalContainer').innerHTML = '';
+}
+
+function printReceipt() {
+  document.body.classList.add('printing-receipt');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-receipt'), 800);
+}
+
+function openSettingsModal() {
+  document.getElementById('modalContainer').innerHTML = `
+    <div class="backdrop">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>Pengaturan Kasir &amp; Midtrans</h3>
+          <button class="btn sm ghost" onclick="closeModal()">✕</button>
+        </div>
+        <label style="display:block;font-size:12px;font-weight:700;margin:10px 0 4px">URL CLOUDFLARE WORKER</label>
+        <input id="cfgWorker" value="${posCfg.workerUrl || ''}" placeholder="https://kasir-pos-worker.username.workers.dev" style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:10px">
+        
+        <label style="display:block;font-size:12px;font-weight:700;margin:12px 0 4px">MIDTRANS CLIENT KEY</label>
+        <input id="cfgClient" value="${posCfg.clientKey || ''}" placeholder="SB-Mid-client-..." style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:10px">
+
+        <label style="display:block;font-size:12px;font-weight:700;margin:12px 0 4px">NAMA POS / KASIR</label>
+        <input id="cfgName" value="${posCfg.cashierName || ''}" placeholder="Pos Satpam Utama" style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:10px">
+
+        <div style="margin-top:20px;display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn ghost" onclick="closeModal()">Batal</button>
+          <button class="btn" onclick="saveSettings()">Simpan</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function saveSettings() {
+  posCfg.workerUrl = document.getElementById('cfgWorker').value.trim().replace(/\/+$/, '');
+  posCfg.clientKey = document.getElementById('cfgClient').value.trim();
+  posCfg.cashierName = document.getElementById('cfgName').value.trim() || 'Pos Satpam Utama';
+  localStorage.setItem(KPOS_CFG_KEY, JSON.stringify(posCfg));
+  document.getElementById('appSubtitle').textContent = posCfg.cashierName + ' · Sistem Kasir Online Midtrans & Tunai';
+  closeModal();
+  toast('Pengaturan Kasir tersimpan!');
+}
+
+loadData();
+</script>
+</body>
+</html>

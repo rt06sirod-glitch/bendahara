@@ -1068,6 +1068,96 @@ body.mode-user main {
   border-top: 1px solid #bfdbfe;
 }
 
+/* ==============================================================================
+   TEMA MINIMALIS: container seragam, item berbentuk tombol, keranjang
+   ============================================================================== */
+/* Satu aksen, minim gradasi */
+.brand-badge-icon{background:var(--acc);box-shadow:0 4px 12px -2px rgba(37,99,235,.35)}
+.gradient-text{background:none;-webkit-text-fill-color:currentColor;color:var(--acc)}
+.pos-w-card{background:var(--acc-s);border:1px solid #dbeafe}
+.pos-w-info .av-lg{background:var(--acc)}
+.pos-btn-pay{display:inline-flex;align-items:center;gap:8px}
+.pos-btn-pay.midtrans{background:var(--acc);box-shadow:0 10px 22px -8px rgba(37,99,235,.55)}
+.pos-btn-pay.cash{background:var(--ok);box-shadow:0 10px 22px -8px rgba(22,163,74,.5)}
+.pos-btn-pay.midtrans:hover,.pos-btn-pay.cash:hover{filter:brightness(1.04)}
+.breakdown-row.pri b,.breakdown-row.sec b,.breakdown-row.tam b{color:var(--ink)}
+.checkout-panel{border-radius:var(--r-lg)}
+@media(min-width:961px){.checkout-panel{max-height:calc(100vh - 110px);overflow-y:auto}}
+.checkout-panel.flash{animation:kpFlash 1s ease}
+@keyframes kpFlash{0%{box-shadow:0 0 0 0 rgba(37,99,235,.5)}50%{box-shadow:0 0 0 7px rgba(37,99,235,.22)}100%{box-shadow:0 0 0 0 rgba(37,99,235,0)}}
+
+/* Tombol checkout (kanan atas) */
+.cart-btn{position:relative;display:inline-flex;align-items:center;gap:10px;height:46px;padding:0 18px 0 14px;border:0;border-radius:14px;cursor:pointer;color:#fff;font-weight:700;background:linear-gradient(135deg,#e8590c 0%,#c2410c 100%);box-shadow:0 6px 18px rgba(194,65,12,.40);transition:transform .15s,filter .15s}
+.cart-btn:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.cart-btn:focus-visible{outline:3px solid #fed7aa;outline-offset:2px}
+.cart-btn .ico{flex:none}
+.cart-btn .ct{display:flex;flex-direction:column;align-items:flex-start;line-height:1.15;text-align:left}
+.cart-btn .ct small{font-size:10.5px;font-weight:600;opacity:.95}
+.cart-btn .ct b{font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cart-badge{position:absolute;top:-9px;right:-9px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;background:#fff;color:#c2410c;border:2px solid #c2410c;font-size:12.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.cart-btn.bump{animation:cartBump .4s ease}
+@keyframes cartBump{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
+@media(max-width:700px){
+  .user-topbar{padding:10px 14px;gap:8px}
+  .user-top-brand p,.user-mode-pill{display:none}
+  .user-top-brand h2{font-size:15px}
+  .btn-admin-switch span{display:none}
+  .btn-admin-switch{padding:10px 12px}
+  .cart-btn .ct small{display:none}
+}
+
+/* Container tagihan: satu warna untuk semua */
+.kp-list{display:flex;flex-direction:column;gap:18px}
+.kp-legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--mut);margin:0 2px}
+.kp-legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.kp-done{display:flex;align-items:center;gap:10px;padding:14px 18px;border:1px solid #bbf7d0;background:#f0fdf4;color:#15803d;border-radius:14px;font-weight:700}
+.kp-card{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:#fff;box-shadow:var(--shadow)}
+.kp-head{background:var(--acc-s);border-bottom:1px solid #dbeafe;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.kp-title{display:flex;align-items:center;gap:12px}
+.kp-ico{width:36px;height:36px;border-radius:10px;background:#fff;border:1px solid #bfdbfe;color:var(--acc);display:flex;align-items:center;justify-content:center;flex:none}
+.kp-title h4{margin:0;font-size:16px;font-weight:700;letter-spacing:-.02em;color:var(--ink);display:flex;align-items:center;gap:8px}
+.kp-tag{font-size:10.5px;font-weight:800;letter-spacing:.04em;background:#fff;color:var(--acc);border:1px solid #bfdbfe;padding:2px 8px;border-radius:999px}
+.kp-title p{margin:2px 0 0;font-size:12px;color:var(--mut)}
+.kp-act{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kp-sub{background:#fff;color:var(--acc);border:1px solid #bfdbfe;padding:5px 12px;border-radius:10px;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+.kp-q{border:1px solid #bfdbfe;background:#fff;color:var(--acc);padding:6px 12px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.kp-q:hover{background:var(--acc);border-color:var(--acc);color:#fff}
+.kp-empty{padding:18px;text-align:center;color:var(--mut);font-size:13px}
+
+/* Item: nama di luar tombol, harga + status di dalam tombol */
+.kp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px 12px;padding:16px;max-height:340px;overflow-y:auto}
+.kp-item{display:flex;flex-direction:column;gap:6px;min-width:0}
+.kp-name{font-size:12.5px;font-weight:600;color:var(--ink);line-height:1.3;padding:0 2px}
+.kp-btn{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;padding:10px 12px;border-radius:14px;border:1.5px solid;text-align:left;cursor:pointer;transition:background .18s,border-color .18s,box-shadow .18s}
+.kp-btn:focus-visible{outline:3px solid #bfd0ff;outline-offset:2px}
+.kp-price{font-weight:800;font-size:14px;font-variant-numeric:tabular-nums}
+.kp-st{font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.kp-btn.belum{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+.kp-btn.belum .kp-st{background:var(--no);color:#fff}
+.kp-btn.belum:hover{background:#fee2e2;border-color:#f87171}
+.kp-btn.cart{background:var(--acc);border-color:var(--acc);color:#fff;box-shadow:0 8px 18px -6px rgba(37,99,235,.55)}
+.kp-btn.cart .kp-st{background:rgba(255,255,255,.26);color:#fff}
+.kp-btn.lunas{background:#f0fdf4;border-color:#bbf7d0;color:#166534;cursor:not-allowed}
+.kp-btn.lunas .kp-st{background:#15803d;color:#fff}
+
+/* Keranjang */
+.cart-box{margin-bottom:16px}
+.cart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cart-head b{font-size:14px}
+.cart-count{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:999px;background:var(--acc-s);color:var(--acc);font-size:12px;text-align:center}
+.cart-clear{border:0;background:none;color:var(--no);font-size:12px;font-weight:700;cursor:pointer;padding:4px 8px;border-radius:8px}
+.cart-clear:hover{background:var(--no-s)}
+.cart-list{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow-y:auto}
+.cart-row{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 12px;border:1px solid var(--line);border-radius:12px;background:#f8fafc}
+.cart-row .cn{flex:1;min-width:0;font-size:12.5px;font-weight:600;line-height:1.3}
+.cart-row .cp{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.cart-del{flex:none;width:32px;height:32px;border:0;border-radius:9px;background:var(--no-s);color:var(--no);cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.cart-del:hover{background:var(--no);color:#fff}
+.cart-del:focus-visible{outline:3px solid #fecaca;outline-offset:1px}
+.cart-empty{padding:16px 12px;text-align:center;color:var(--mut);font-size:12.5px;border:1px dashed var(--line);border-radius:12px;line-height:1.6}
+
+@media(prefers-reduced-motion:reduce){.cart-btn.bump,.checkout-panel.flash{animation:none}.cart-btn,.kp-btn{transition:none}}
+
 </style>
 </head>
 <body>
@@ -1111,6 +1201,7 @@ const ICONS = {
   pos:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h12M6 12h4M14 12h4M6 16h8"/>',
   qr:'<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h4v4h-4zM14 19h3v2h-3zM19 14h2v3h-2z"/>',
   printer:'<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  cart:'<circle cx="8" cy="21" r="1.2"/><circle cx="19" cy="21" r="1.2"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/>',
   lock:'<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
 };
 const ico = (n, s = 20) => `<svg class="ico" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[n] || ''}</svg>`;
@@ -1354,7 +1445,8 @@ const ui = {
   kposCash: 0, 
   kposPin: '',
   kposTab: 'pos', // 'pos' | 'history' | 'settings'
-  kposActiveOrder: null
+  kposActiveOrder: null,
+  kposBump: false // animasi tombol checkout saat item masuk keranjang
 };
 
 // Konfigurasi Kasir Pos (LocalStorage)
@@ -1432,42 +1524,156 @@ function bottomHtml() {
 
 /* ============ KASIR POS LOGIKA & HALAMAN ============ */
 
-// Mengambil seluruh tagihan belum lunas dari seorang warga
-function getWargaUnpaidDues(w) {
+// Seluruh tagihan seorang warga (lunas & belum) untuk ditampilkan di kasir
+function getWargaAllDues(w) {
   if (!w) return [];
   const c = cur(), out = [];
   for (const t of TYPES) {
     const [f, to] = rangeOf(w, t);
     for (const m of monthsBetween(f, to < c ? to : c)) {
-      const isPaid = !!S.paid[t + '|' + w.id + '|' + m];
-      if (!isPaid) {
-        out.push({
-          key: t + '|' + w.id + '|' + m,
-          type: t,
-          ym: m,
-          amt: mAmt(t, w, m),
-          label: (t === 'kas' ? S.items.kas.label : S.items.dayak.label) + ' (' + mLabel(m) + ')',
-          pos: t
-        });
-      }
+      const key = t + '|' + w.id + '|' + m;
+      out.push({
+        key: key,
+        type: t,
+        ym: m,
+        amt: mAmt(t, w, m),
+        label: (t === 'kas' ? S.items.kas.label : S.items.dayak.label) + ' (' + mLabel(m) + ')',
+        pos: t,
+        paid: !!S.paid[key]
+      });
     }
   }
   for (const it of S.tambahan) {
     if (targets(it, w)) {
-      const isPaid = !!S.paid['t|' + it.id + '|' + w.id];
-      if (!isPaid) {
-        out.push({
-          key: 't|' + it.id + '|' + w.id,
-          type: 't',
-          id: it.id,
-          amt: tAmt(it, w),
-          label: it.label + ' (Tambahan)',
-          pos: it.id
-        });
-      }
+      const key = 't|' + it.id + '|' + w.id;
+      out.push({
+        key: key,
+        type: 't',
+        id: it.id,
+        amt: tAmt(it, w),
+        label: it.label + ' (Tambahan)',
+        pos: it.id,
+        paid: !!S.paid[key]
+      });
     }
   }
   return out;
+}
+
+// Hanya tagihan yang belum lunas (yang boleh masuk keranjang & dibayar)
+function getWargaUnpaidDues(w) {
+  return getWargaAllDues(w).filter(d => !d.paid).map(({ paid, ...d }) => d);
+}
+
+// Samakan "uang diterima" dengan total isi keranjang
+function kposSyncCash() {
+  const w = S.warga.find(x => x.id === ui.kposWid);
+  ui.kposCash = w ? getWargaUnpaidDues(w).filter(d => ui.kposSel.has(d.key)).reduce((s, x) => s + x.amt, 0) : 0;
+}
+
+const KPOS_GROUPS = [
+  { type: 'kas',   title: 'Kas Warga',      tag: 'PRIMARY',   icon: 'receipt', none: 'Belum ada tagihan kas' },
+  { type: 'dayak', title: 'Gaji Dayak',     tag: 'SECONDARY', icon: 'users',   none: 'Belum ada tagihan gaji dayak' },
+  { type: 't',     title: 'Iuran Tambahan', tag: 'TAMBAHAN',  icon: 'wallet',  none: 'Tidak ada iuran tambahan' }
+];
+const KPOS_ST_TXT = { lunas: '✓ Lunas', cart: 'Di keranjang', belum: 'Belum' };
+
+// Satu item = nama (label di luar tombol) + tombol berisi harga & status
+function kposItemHtml(d) {
+  const inCart = ui.kposSel.has(d.key);
+  const st = d.paid ? 'lunas' : (inCart ? 'cart' : 'belum');
+  const aria = esc(d.label) + ', ' + rp(d.amt) + ', ' + KPOS_ST_TXT[st].replace('✓ ', '');
+  const attrs = d.paid
+    ? 'disabled aria-disabled="true"'
+    : `data-a="kposToggleItem" aria-pressed="${inCart}"`;
+  return `
+    <div class="kp-item">
+      <span class="kp-name">${esc(d.label)}</span>
+      <button type="button" class="kp-btn ${st}" data-k="${esc(d.key)}" aria-label="${aria}" ${attrs}>
+        <span class="kp-price">${rp(d.amt)}</span>
+        <span class="kp-st">${KPOS_ST_TXT[st]}</span>
+      </button>
+    </div>`;
+}
+
+function kposGroupsHtml(allDues) {
+  const open = allDues.filter(d => !d.paid);
+  const done = allDues.length && !open.length
+    ? `<div class="kp-done">${ico('check', 18)} Semua iuran warga ini sudah lunas</div>` : '';
+  return `
+    <div class="kp-list">
+      <div class="kp-legend">
+        <span><i style="background:var(--no)"></i>Belum lunas</span>
+        <span><i style="background:var(--acc)"></i>Di keranjang</span>
+        <span><i style="background:#15803d"></i>Lunas (tidak bisa dipilih)</span>
+      </div>
+      ${done}
+      ${KPOS_GROUPS.map(g => {
+        const list = allDues.filter(d => d.type === g.type);
+        const gOpen = list.filter(d => !d.paid);
+        const sub = gOpen.filter(d => ui.kposSel.has(d.key)).reduce((s, x) => s + x.amt, 0);
+        const info = !list.length ? g.none
+          : (gOpen.length ? gOpen.length + ' belum lunas · ' + (list.length - gOpen.length) + ' lunas' : 'Semua lunas (' + list.length + ')');
+        return `
+          <section class="kp-card">
+            <div class="kp-head">
+              <div class="kp-title">
+                <div class="kp-ico">${ico(g.icon, 20)}</div>
+                <div>
+                  <h4>${g.title} <span class="kp-tag">${g.tag}</span></h4>
+                  <p>${info}</p>
+                </div>
+              </div>
+              <div class="kp-act">
+                <span class="kp-sub" title="Subtotal ${g.title} di keranjang">${rp(sub)}</span>
+                ${gOpen.length ? `
+                  <button type="button" class="kp-q" data-a="kposToggleGroup" data-type="${g.type}" data-action="all">Tambah Semua</button>
+                  <button type="button" class="kp-q" data-a="kposToggleGroup" data-type="${g.type}" data-action="none">Kosongkan</button>
+                ` : ''}
+              </div>
+            </div>
+            ${list.length
+              ? `<div class="kp-grid" data-type="${g.type}">${list.map(kposItemHtml).join('')}</div>`
+              : `<div class="kp-empty">${g.none}</div>`}
+          </section>`;
+      }).join('')}
+    </div>`;
+}
+
+function kposCartHtml(items) {
+  return `
+    <div class="cart-box">
+      <div class="cart-head">
+        <b>Keranjang <span class="cart-count">${items.length}</span></b>
+        ${items.length ? '<button type="button" class="cart-clear" data-a="kposClearCart">Kosongkan</button>' : ''}
+      </div>
+      <div class="cart-list">
+        ${items.length ? items.map(d => `
+          <div class="cart-row">
+            <span class="cn">${esc(d.label)}</span>
+            <span class="cp">${rp(d.amt)}</span>
+            <button type="button" class="cart-del" data-a="kposRemoveItem" data-k="${esc(d.key)}"
+              aria-label="Hapus ${esc(d.label)} dari keranjang" title="Hapus dari keranjang">${ico('trash', 16)}</button>
+          </div>`).join('') : `
+          <div class="cart-empty">Keranjang kosong.<br>Klik tagihan berstatus <b>Belum</b> untuk menambahkannya.</div>`}
+      </div>
+    </div>`;
+}
+
+// Tombol checkout di ujung kanan atas (header)
+function kposCartBtn() {
+  if (ui.appMode !== 'user' && !(ui.page === 'kasir' && ui.kposTab === 'pos')) return '';
+  const w = ui.kposWid ? S.warga.find(x => x.id === ui.kposWid) : null;
+  const items = w ? getWargaUnpaidDues(w).filter(d => ui.kposSel.has(d.key)) : [];
+  const total = items.reduce((s, x) => s + x.amt, 0);
+  const bump = ui.kposBump;
+  ui.kposBump = false;
+  return `
+    <button type="button" class="cart-btn ${bump ? 'bump' : ''}" data-a="kposOpenCheckout" aria-label="Buka keranjang dan checkout">
+      ${ico('cart', 24)}
+      <span class="ct"><small>Checkout</small><b>${rp(total)}</b></span>
+      ${items.length ? `<span class="cart-badge">${items.length}</span>` : ''}
+    </button>`;
 }
 
 function kasirPage() {
@@ -1517,6 +1723,8 @@ function kasirPage() {
 function kasirMainBody() {
   const selectedWarga = ui.kposWid ? S.warga.find(x => x.id === ui.kposWid) : null;
   const unpaidDues = selectedWarga ? getWargaUnpaidDues(selectedWarga) : [];
+  const allDues = selectedWarga ? getWargaAllDues(selectedWarga) : [];
+  const cartItems = unpaidDues.filter(d => ui.kposSel.has(d.key));
 
   // PISAHKAN MENJADI 3 KONTAINER PRODUK: PRIMARY (KAS), SECONDARY (DAYAK), TAMBAHAN
   const primaryDues = unpaidDues.filter(d => d.type === 'kas');
@@ -1621,133 +1829,14 @@ function kasirMainBody() {
           </div>
         </div>
 
-        <!-- 3 KONTAINER PRODUK TAGIHAN -->
-        <div class="prod-containers">
-
-          <!-- 1. KONTAINER PRIMARY: KAS WARGA -->
-          <div class="prod-card pri">
-            <div class="prod-header pri">
-              <div class="prod-title-group">
-                <div class="prod-icon-box">${ico('receipt', 20)}</div>
-                <div>
-                  <h4>Kas Warga <span class="prod-badge-tag">PRIMARY</span></h4>
-                  <p>${primaryDues.length ? primaryDues.length + ' bulan tagihan berjalan' : 'Semua kas warga lunas'}</p>
-                </div>
-              </div>
-              <div class="prod-header-actions">
-                <div class="prod-subtot-badge">${rp(subtotPrimary)}</div>
-                ${primaryDues.length ? `
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="kas" data-action="all">Pilih Semua</button>
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="kas" data-action="none">Kosongkan</button>
-                ` : ''}
-              </div>
-            </div>
-            <div class="prod-items-list">
-              ${primaryDues.length ? primaryDues.map(item => {
-                const isChecked = ui.kposSel.has(item.key);
-                return `
-                  <div class="prod-item-row ${isChecked ? 'checked' : ''}" data-a="kposToggleItem" data-k="${esc(item.key)}">
-                    <div class="prod-item-check">${isChecked ? '✓' : ''}</div>
-                    <div class="prod-item-desc">
-                      <b>${esc(item.label)}</b>
-                      <small>Iuran Kas Paguyuban Warga</small>
-                    </div>
-                    <div class="prod-item-price">${rp(item.amt)}</div>
-                  </div>
-                `;
-              }).join('') : `
-                <div class="prod-empty-box">
-                  ${ico('check', 20)} Kas Warga Sudah Lunas
-                </div>
-              `}
-            </div>
-          </div>
-
-          <!-- 2. KONTAINER SECONDARY: GAJI DAYAK -->
-          <div class="prod-card sec">
-            <div class="prod-header sec">
-              <div class="prod-title-group">
-                <div class="prod-icon-box">${ico('users', 20)}</div>
-                <div>
-                  <h4>Gaji Dayak <span class="prod-badge-tag">SECONDARY</span></h4>
-                  <p>${secondaryDues.length ? secondaryDues.length + ' bulan tagihan berjalan' : 'Semua gaji dayak lunas'}</p>
-                </div>
-              </div>
-              <div class="prod-header-actions">
-                <div class="prod-subtot-badge">${rp(subtotSecondary)}</div>
-                ${secondaryDues.length ? `
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="dayak" data-action="all">Pilih Semua</button>
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="dayak" data-action="none">Kosongkan</button>
-                ` : ''}
-              </div>
-            </div>
-            <div class="prod-items-list">
-              ${secondaryDues.length ? secondaryDues.map(item => {
-                const isChecked = ui.kposSel.has(item.key);
-                return `
-                  <div class="prod-item-row ${isChecked ? 'checked' : ''}" data-a="kposToggleItem" data-k="${esc(item.key)}">
-                    <div class="prod-item-check">${isChecked ? '✓' : ''}</div>
-                    <div class="prod-item-desc">
-                      <b>${esc(item.label)}</b>
-                      <small>Iuran Petugas Keamanan / Dayak</small>
-                    </div>
-                    <div class="prod-item-price">${rp(item.amt)}</div>
-                  </div>
-                `;
-              }).join('') : `
-                <div class="prod-empty-box">
-                  ${ico('check', 20)} Gaji Dayak Sudah Lunas
-                </div>
-              `}
-            </div>
-          </div>
-
-          <!-- 3. KONTAINER TAMBAHAN: IURAN KHUSUS / KEGIATAN -->
-          <div class="prod-card tam">
-            <div class="prod-header tam">
-              <div class="prod-title-group">
-                <div class="prod-icon-box">${ico('wallet', 20)}</div>
-                <div>
-                  <h4>Iuran Tambahan <span class="prod-badge-tag">TAMBAHAN</span></h4>
-                  <p>${tambahanDues.length ? tambahanDues.length + ' item iuran khusus' : 'Tidak ada tagihan tambahan'}</p>
-                </div>
-              </div>
-              <div class="prod-header-actions">
-                <div class="prod-subtot-badge">${rp(subtotTambahan)}</div>
-                ${tambahanDues.length ? `
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="t" data-action="all">Pilih Semua</button>
-                  <button class="btn-prod-quick" data-a="kposToggleGroup" data-type="t" data-action="none">Kosongkan</button>
-                ` : ''}
-              </div>
-            </div>
-            <div class="prod-items-list">
-              ${tambahanDues.length ? tambahanDues.map(item => {
-                const isChecked = ui.kposSel.has(item.key);
-                return `
-                  <div class="prod-item-row ${isChecked ? 'checked' : ''}" data-a="kposToggleItem" data-k="${esc(item.key)}">
-                    <div class="prod-item-check">${isChecked ? '✓' : ''}</div>
-                    <div class="prod-item-desc">
-                      <b>${esc(item.label)}</b>
-                      <small>Iuran Khusus / Perbaikan / Acara</small>
-                    </div>
-                    <div class="prod-item-price">${rp(item.amt)}</div>
-                  </div>
-                `;
-              }).join('') : `
-                <div class="prod-empty-box">
-                  ${ico('check', 20)} Tidak Ada Tagihan Tambahan
-                </div>
-              `}
-            </div>
-          </div>
-
-        </div>
+        ${kposGroupsHtml(allDues)}
       </div>
 
       <!-- Kolom Kanan: Rincian Pembayaran (Checkout Panel) -->
       <div>
-        <div class="checkout-panel">
-          
+        <div class="checkout-panel" id="kposCartPanel">
+          ${kposCartHtml(cartItems)}
+
           <div class="checkout-summary-breakdown">
             <div class="breakdown-row pri">
               <span>Kas Warga (Primary)</span>
@@ -2579,6 +2668,13 @@ async function shareInvoice() {
 /* ============ RENDER ============ */
 function render() {
   const y = window.scrollY;
+  // jaga posisi scroll daftar tagihan/keranjang dan fokus keyboard agar tidak lompat saat klik
+  const kpScroll = {};
+  document.querySelectorAll('.kp-grid').forEach(el => { kpScroll[el.dataset.type] = el.scrollTop; });
+  const cartEl = document.querySelector('.cart-list');
+  const cartTop = cartEl ? cartEl.scrollTop : 0;
+  const ae = document.activeElement;
+  const kpFocus = ae && ae.classList && ae.classList.contains('kp-btn') ? ae.dataset.k : null;
   const isUser = (ui.appMode === 'user');
 
   if (isUser) {
@@ -2608,6 +2704,7 @@ function render() {
         <div style="display:flex;align-items:center;gap:12px">
           <span class="user-mode-pill"><i></i> Mode Transaksi Pos</span>
           <button class="btn-admin-switch" data-a="openAdminLoginModal">${ico('lock', 16)}<span>Mode Admin</span></button>
+          ${kposCartBtn()}
         </div>
       </header>
     `;
@@ -2615,15 +2712,25 @@ function render() {
     headerHtml = `
       <div class="admin-mode-banner">
         <b>${ico('settings', 18)} Mode Administrator Aktif (Semua pengaturan &amp; laporan dapat diakses)</b>
-        <button class="btn sm" style="background:#fff;color:var(--ink)" data-a="switchToUserMode">
-          ${ico('user', 14)} Beralih ke Mode Transaksi (User)
-        </button>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <button class="btn sm" style="background:#fff;color:var(--ink)" data-a="switchToUserMode">
+            ${ico('user', 14)} Beralih ke Mode Transaksi (User)
+          </button>
+          ${kposCartBtn()}
+        </div>
       </div>
     `;
   }
 
   $('#main').innerHTML = headerHtml + pageContent;
   window.scrollTo(0, y);
+  document.querySelectorAll('.kp-grid').forEach(el => { if (kpScroll[el.dataset.type]) el.scrollTop = kpScroll[el.dataset.type]; });
+  const cartEl2 = document.querySelector('.cart-list');
+  if (cartEl2) cartEl2.scrollTop = cartTop;
+  if (kpFocus) {
+    const fb = Array.from(document.querySelectorAll('.kp-btn')).find(x => x.dataset.k === kpFocus);
+    if (fb && !fb.disabled) fb.focus({ preventScroll: true });
+  }
   const wrap = document.querySelector('#mxBody .tbl-wrap'), th = document.querySelector('#mxBody th.cur');
   if (wrap && th) wrap.scrollLeft = Math.max(0, th.offsetLeft - 220);
 }
@@ -2943,6 +3050,7 @@ const ACT = {
       if (act === 'all') ui.kposSel.add(d.key);
       else ui.kposSel.delete(d.key);
     });
+    if (act === 'all' && dues.length) ui.kposBump = true;
     // Update cash
     const allDues = getWargaUnpaidDues(w);
     let tot = 0;
@@ -3000,12 +3108,9 @@ const ACT = {
     if (!w) return;
     ui.kposWid = wid;
     ui.kqpos = '';
-    // Otomatis centang semua tagihan belum lunas
-    const dues = getWargaUnpaidDues(w);
-    ui.kposSel = new Set(dues.map(d => d.key));
-    // Reset kalkulator cash
-    const tot = dues.reduce((s, x) => s + x.amt, 0);
-    ui.kposCash = tot;
+    // Keranjang mulai kosong; kasir memilih sendiri tagihan yang belum lunas
+    ui.kposSel = new Set();
+    ui.kposCash = 0;
     render();
   },
   kposClearW() {
@@ -3016,18 +3121,35 @@ const ACT = {
   },
   kposToggleItem(el) {
     const k = el.dataset.k;
+    const w = S.warga.find(x => x.id === ui.kposWid);
+    // item lunas tidak ada di daftar belum lunas, jadi tidak pernah bisa masuk keranjang
+    if (!w || !getWargaUnpaidDues(w).some(d => d.key === k)) return;
     if (ui.kposSel.has(k)) {
       ui.kposSel.delete(k);
     } else {
       ui.kposSel.add(k);
+      ui.kposBump = true;
     }
-    // Update cash value
-    const w = S.warga.find(x => x.id === ui.kposWid);
-    const dues = getWargaUnpaidDues(w);
-    let tot = 0;
-    dues.forEach(d => { if (ui.kposSel.has(d.key)) tot += d.amt; });
-    ui.kposCash = tot;
+    kposSyncCash();
     render();
+  },
+  kposRemoveItem(el) {
+    if (!ui.kposSel.delete(el.dataset.k)) return;
+    kposSyncCash();
+    render();
+  },
+  kposClearCart() {
+    ui.kposSel = new Set();
+    kposSyncCash();
+    render();
+  },
+  kposOpenCheckout() {
+    const p = document.getElementById('kposCartPanel');
+    if (!p) { toast('Cari warga dulu, lalu pilih tagihannya.'); return; }
+    const calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    p.scrollIntoView({ behavior: calm ? 'auto' : 'smooth', block: 'nearest' });
+    p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash');
+    if (!ui.kposSel.size) toast('Keranjang masih kosong. Klik tagihan yang belum lunas.');
   },
   kposToggleAll(el) {
     const mode = el.dataset.v;

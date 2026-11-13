@@ -49,7 +49,13 @@
 <body>
 <div class="wrap">
   <h1>Scan QRIS &rarr; Bayar di Simulator</h1>
-  <p class="sub">Khusus <b>Sandbox Midtrans</b>. Arahkan kamera ke QR pembayaran, lalu tekan <b>Bayar</b>. QR hasil scan otomatis disalin dan Simulator QRIS Midtrans terbuka.</p>
+  <p class="sub">Khusus <b>Sandbox Midtrans</b>; jangan dipakai untuk QR production karena isi QR dikirim ke layanan pembuat gambar. Arahkan kamera ke QR pembayaran, lalu tekan <b>Bayar</b>. QR hasil scan otomatis disalin dan Simulator QRIS Midtrans terbuka.</p>
+
+  <div class="card">
+    <label class="lbl" for="workerUrl">Alamat Cloudflare Worker (opsional)</label>
+    <input type="text" id="workerUrl" placeholder="https://kasir-pos-worker.akun-anda.workers.dev" autocomplete="off">
+    <p class="sub" style="margin:6px 0 0">Tidak wajib. Tanpa ini, alamat gambar dibuat otomatis dari isi QR. Jika diisi, halaman mencari lebih dulu alamat gambar resmi dari Midtrans lewat Worker.</p>
+  </div>
 
   <div class="card" id="scanCard">
     <div class="cam">
@@ -74,16 +80,27 @@
       <b>QR terbaca</b><span class="badge" id="crcBadge"></span>
     </div>
     <div class="kv" id="kv"></div>
-    <label class="lbl" for="raw">Isi QR (string QRIS)</label>
-    <textarea id="raw" readonly></textarea>
+    <div class="msg hidden" id="resolveMsg"></div>
+    <div id="qrUrlWrap" class="hidden">
+      <label class="lbl" for="qrUrlBox" style="margin-top:12px">Alamat gambar QR (dipakai simulator)</label>
+      <textarea id="qrUrlBox" readonly></textarea>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:8px">
+        <img id="qrPreview" alt="Pratinjau QR" style="width:96px;height:96px;border:1px solid var(--line);border-radius:8px;background:#fff;object-fit:contain" class="hidden">
+        <button id="btnProv" class="hidden" type="button">Ganti penyedia gambar</button>
+      </div>
+    </div>
+    <details style="margin-top:10px">
+      <summary>Isi QR hasil scan (string QRIS)</summary>
+      <textarea id="raw" readonly style="margin-top:8px"></textarea>
+    </details>
     <div class="row" style="margin-top:10px">
       <button id="btnCopy">Salin</button>
       <button id="btnAgain">Scan Ulang</button>
     </div>
     <div style="margin-top:12px"><button class="pay" id="btnPay">Bayar di Simulator Midtrans</button></div>
     <div class="msg" id="payMsg">
-      Tombol ini menyalin isi QR lalu membuka Simulator QRIS Midtrans di tab baru.
-      Di sana <b>tempel</b> (tahan lama, pilih Tempel) lalu klik <b>Scan QR</b>.
+      Tombol ini menyalin <b>alamat gambar QR</b> lalu membuka Simulator QRIS Midtrans di tab baru.
+      Di sana <b>tempel</b> lalu klik <b>Scan QR</b>. Jika ditolak, tekan <b>Ganti penyedia gambar</b> lalu ulangi.
     </div>
   </div>
 
@@ -118,6 +135,8 @@
 
   /* ---------- Penyimpanan alamat simulator (aman jika storage diblokir) ---------- */
   try { const v = localStorage.getItem('sim_url'); if (v) $('simUrl').value = v; } catch (e) {}
+  try { const v = localStorage.getItem('worker_url'); if (v) $('workerUrl').value = v; } catch (e) {}
+  $('workerUrl').addEventListener('change', () => { try { localStorage.setItem('worker_url', $('workerUrl').value.trim()); } catch (e) {} });
   $('simUrl').addEventListener('change', () => { try { localStorage.setItem('sim_url', $('simUrl').value.trim()); } catch (e) {} });
 
   /* ---------- EMV / QRIS ---------- */
@@ -153,7 +172,61 @@
   const rupiah = v => { const n = Number(v); return isFinite(n) && n > 0 ? 'Rp ' + n.toLocaleString('id-ID') : ''; };
 
   /* ---------- Tampilan hasil ---------- */
-  let current = '';
+  let current = '', resolved = null, resolveSeq = 0;
+  const payload = () => (resolved && resolved.qr_url) ? resolved.qr_url : current;
+
+  // Alamat gambar QR dibuat dari isi QR itu sendiri (gambar berisi string yang sama persis dengan QR asli)
+  const IMG_PROVIDERS = [
+    t => 'https://quickchart.io/qr?size=400&margin=4&ecLevel=M&format=png&text=' + encodeURIComponent(t),
+    t => 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=20&ecc=M&format=png&data=' + encodeURIComponent(t)
+  ];
+  let provIdx = 0;
+
+  function setResolved(d, generated) {
+    resolved = Object.assign({}, d, { generated: !!generated });
+    $('qrUrlBox').value = d.qr_url; $('qrUrlWrap').classList.remove('hidden');
+    const pv = $('qrPreview'); pv.src = d.qr_url; pv.classList.remove('hidden');
+    $('btnProv').classList.toggle('hidden', !generated);
+  }
+
+  // Isi QR -> alamat gambar QR. Urutan: URL apa adanya; alamat resmi Midtrans via Worker (jika diisi); lalu dibuat otomatis.
+  async function resolveQr(text, isEmv) {
+    const seq = ++resolveSeq;
+    resolved = null;
+    $('qrUrlWrap').classList.add('hidden'); $('qrPreview').classList.add('hidden'); $('btnProv').classList.add('hidden');
+    const box = $('resolveMsg');
+    const show = (t, err) => { box.textContent = t; box.className = 'msg' + (err ? ' err' : ''); };
+    if (/^https?:\/\//i.test(text)) { setResolved({ qr_url: text }, false); box.className = 'msg hidden'; return; }
+    if (!isEmv) { show('Isi ini bukan string QRIS, jadi dipakai apa adanya.', false); return; }
+
+    // 1) dibuat otomatis dari isi QR (tanpa Worker)
+    setResolved({ qr_url: IMG_PROVIDERS[provIdx](text) }, true);
+    show('Alamat gambar dibuat otomatis dari isi QR (gambar QR yang sama persis). Salin lalu tempel di simulator.', false);
+
+    // 2) bila Worker diisi, utamakan alamat resmi Midtrans
+    const worker = $('workerUrl').value.trim().replace(/\/+$/, '');
+    if (!worker) return;
+    try {
+      const res = await fetch(worker + '/api/sandbox/resolve-qr', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qr: text })
+      });
+      const d = await res.json().catch(() => ({}));
+      if (seq !== resolveSeq) return;
+      if (res.ok && d.qr_url) {
+        setResolved(d, false);
+        const info = [d.order_id, rupiah(d.gross_amount), d.payment_status].filter(Boolean).join(' \u00b7 ');
+        show('Alamat resmi Midtrans ditemukan: ' + info, false);
+      }
+      // jika tidak ditemukan, tetap pakai alamat yang dibuat otomatis
+    } catch (e) { /* abaikan: tetap pakai alamat yang dibuat otomatis */ }
+  }
+  $('btnProv').onclick = () => {
+    if (!current || !resolved || !resolved.generated) return;
+    provIdx = (provIdx + 1) % IMG_PROVIDERS.length;
+    setResolved({ qr_url: IMG_PROVIDERS[provIdx](current) }, true);
+    setMsg('Penyedia gambar diganti. Salin alamat baru lalu tempel di simulator.', false);
+  };
+
   function showResult(text) {
     stopCamera();
     current = String(text || '').trim();
@@ -178,7 +251,7 @@
     $('scanCard').classList.add('hidden');
     if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) {} }
     // Coba salin langsung (sebagian browser menolak tanpa ketukan; tombol Bayar tetap menyalin ulang)
-    copyText(current).catch(() => {});
+    resolveQr(current, a.isEmv).then(() => copyText(payload()).catch(() => {}));
   }
   function resetScan() {
     $('resCard').classList.add('hidden');
@@ -198,18 +271,19 @@
   }
 
   $('btnCopy').onclick = async () => {
-    try { await copyText(current); setMsg('Isi QR disalin.', false); }
+    try { await copyText(payload()); setMsg(resolved ? 'Alamat gambar QR disalin.' : 'Isi QR disalin.', false); }
     catch (e) { setMsg('Gagal menyalin otomatis. Tekan dan tahan kotak teks di atas, lalu pilih Salin.', true); }
   };
   $('btnPay').onclick = async () => {
     let copied = true;
-    try { await copyText(current); } catch (e) { copied = false; }
+    try { await copyText(payload()); } catch (e) { copied = false; }
     const url = $('simUrl').value.trim() || 'https://simulator.sandbox.midtrans.com/qris/index';
     const w = window.open(url, '_blank', 'noopener');
     if (!w) { setMsg('Pop-up diblokir. Buka simulator secara manual: ' + url, true); return; }
     setMsg(copied
-      ? 'Isi QR sudah disalin. Di tab simulator, tempel lalu klik Scan QR.'
-      : 'Simulator dibuka, tetapi QR belum tersalin. Tekan Salin dulu, lalu tempel di simulator.', !copied);
+      ? (resolved ? 'Alamat gambar QR sudah disalin. Di tab simulator, tempel lalu klik Scan QR.'
+                  : 'Belum ada alamat gambar, jadi yang disalin adalah isi QR apa adanya. Simulator kemungkinan menolaknya.')
+      : 'Simulator dibuka, tetapi belum tersalin. Tekan Salin dulu, lalu tempel di simulator.', !copied || !resolved);
   };
   $('btnAgain').onclick = resetScan;
   function setMsg(t, err) { const m = $('payMsg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }

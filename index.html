@@ -1250,7 +1250,7 @@ function compressMonths(arr) {
    Isi url & key di bawah ini SATU KALI (Supabase > Project Settings > API: Project URL + anon/public key),
    lalu simpan & upload ulang file ini. Setelah itu halaman setup tidak pernah muncul lagi di perangkat/alamat mana pun.
    Anon key memang publik; data tetap aman karena dilindungi login + RLS. JANGAN pakai service_role key. */
-const SB_DEFAULT = { url: '', key: '' };
+const SB_DEFAULT = { url: 'https://xejwvpctwvthicqqmgbv.supabase.co', key: 'sb_publishable_wKc5kqxKNrejqVP8ZZQ1fQ_9YJuPAlQ' };
 const CFG_KEY = 'tagihan-warga-sb';
 let sb = null, snap = null, saveT = 0, saving = Promise.resolve(), syncState = 'ok';
 const SYNC_TXT = { ok: 'Tersimpan di Supabase', pending: 'Menunggu simpan...', saving: 'Menyimpan...', err: 'Gagal simpan. Ketuk untuk coba lagi' };

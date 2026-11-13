@@ -2080,7 +2080,9 @@ function openCustomQrisModal(data) {
   
   // Gunakan gambar QR dari Midtrans jika ada, atau buat QR code via quickchart menggunakan qr_string/payment link
   const rawQrTarget = qr_string || (posCfg.workerUrl ? (posCfg.workerUrl + '/api/kasir/check-status?order_id=' + order_id) : ('https://simulator.sandbox.midtrans.com/qris/' + order_id));
-  const finalQrImage = qr_url || ('https://quickchart.io/qr?text=' + encodeURIComponent(rawQrTarget) + '&size=260');
+  const qrFromString = 'https://quickchart.io/qr?text=' + encodeURIComponent(rawQrTarget) + '&size=260';
+  const finalQrImage = qr_url || qrFromString;
+  const qrImgFallback = (qr_url && qr_string) ? ` onerror="this.onerror=null;this.src='${qrFromString}'"` : '';
 
   modal(`
     <div class="mh">
@@ -2096,8 +2098,9 @@ function openCustomQrisModal(data) {
       <div class="qris-total-val">${rp(gross_amount)}</div>
 
       <div class="qris-qr-frame">
-        <img alt="QRIS Code" src="${finalQrImage}">
+        <img alt="QRIS Code" src="${finalQrImage}"${qrImgFallback}>
       </div>
+      ${qr_url && !posCfg.isProd ? `<div style="font-size:11px;margin:6px 0;word-break:break-all;text-align:center"><a href="${esc(qr_url)}" target="_blank" rel="noopener">Tes Sandbox: buka tautan QR ini lalu tempel di QRIS Simulator Midtrans</a></div>` : ''}
 
       <div class="qris-timer-box">
         <span>Batas waktu pembayaran:</span>
@@ -3348,7 +3351,7 @@ const ACT = {
           warga_nama: w.nama,
           warga_alamat: w.alamat,
           items: dues,
-          payment_method: 'midtrans',
+          payment_method: 'qris',
           cashier_name: posCfg.cashierName
         })
       });
@@ -3359,6 +3362,9 @@ const ACT = {
       }
 
       const paymentRes = await res.json();
+      if (!paymentRes.qr_url && !paymentRes.qr_string) {
+        throw new Error('Worker tidak mengembalikan QR dari Midtrans (qr_url/qr_string kosong). Pastikan Worker sudah versi terbaru dan payment_method "qris" didukung.');
+      }
       
       // Buka Popup QRIS Custom In-App
       openCustomQrisModal({

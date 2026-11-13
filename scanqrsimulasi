@@ -52,9 +52,9 @@
   <p class="sub">Khusus <b>Sandbox Midtrans</b>; jangan dipakai untuk QR production karena isi QR dikirim ke layanan pembuat gambar. Arahkan kamera ke QR pembayaran, lalu tekan <b>Bayar</b>. QR hasil scan otomatis disalin dan Simulator QRIS Midtrans terbuka.</p>
 
   <div class="card">
-    <label class="lbl" for="workerUrl">Alamat Cloudflare Worker (opsional)</label>
+    <label class="lbl" for="workerUrl">Alamat Cloudflare Worker (disarankan)</label>
     <input type="text" id="workerUrl" placeholder="https://kasir-pos-worker.akun-anda.workers.dev" autocomplete="off">
-    <p class="sub" style="margin:6px 0 0">Tidak wajib. Tanpa ini, alamat gambar dibuat otomatis dari isi QR. Jika diisi, halaman mencari lebih dulu alamat gambar resmi dari Midtrans lewat Worker.</p>
+    <p class="sub" style="margin:6px 0 0">Dipakai untuk mencari alamat gambar resmi Midtrans (<code>api.sandbox.midtrans.com/v2/qris/&hellip;/qr-code</code>) dari QR yang dibuat Worker Anda.</p>
   </div>
 
   <div class="card" id="scanCard">
@@ -92,6 +92,8 @@
     <details style="margin-top:10px">
       <summary>Isi QR hasil scan (string QRIS)</summary>
       <textarea id="raw" readonly style="margin-top:8px"></textarea>
+      <label class="lbl" style="margin-top:10px">Rincian tiap bagian</label>
+      <pre id="tlvBox" style="margin:0;white-space:pre-wrap;word-break:break-all;font-size:12px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px"></pre>
     </details>
     <div class="row" style="margin-top:10px">
       <button id="btnCopy">Salin</button>
@@ -100,7 +102,7 @@
     <div style="margin-top:12px"><button class="pay" id="btnPay">Bayar di Simulator Midtrans</button></div>
     <div class="msg" id="payMsg">
       Tombol ini menyalin <b>alamat gambar QR</b> lalu membuka Simulator QRIS Midtrans di tab baru.
-      Di sana <b>tempel</b> lalu klik <b>Scan QR</b>. Jika ditolak, tekan <b>Ganti penyedia gambar</b> lalu ulangi.
+      Di sana <b>tempel</b> lalu klik <b>Scan QR</b>. Alamat resmi Midtrans hanya bisa ditemukan untuk QR yang dibuat oleh Worker Anda (versi terbaru).
     </div>
   </div>
 
@@ -175,12 +177,45 @@
   let current = '', resolved = null, resolveSeq = 0;
   const payload = () => (resolved && resolved.qr_url) ? resolved.qr_url : current;
 
-  // Alamat gambar QR dibuat dari isi QR itu sendiri (gambar berisi string yang sama persis dengan QR asli)
+  const MIDTRANS_API = 'https://api.sandbox.midtrans.com';
+  // Alternatif terakhir: gambar buatan layanan lain (isinya sama, tetapi bukan alamat Midtrans)
   const IMG_PROVIDERS = [
     t => 'https://quickchart.io/qr?size=400&margin=4&ecLevel=M&format=png&text=' + encodeURIComponent(t),
     t => 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=20&ecc=M&format=png&data=' + encodeURIComponent(t)
   ];
   let provIdx = 0;
+
+  // Rincian TLV (termasuk bagian bertingkat) untuk memeriksa apakah ada ID transaksi di dalam QR
+  function flattenTLV(s, depth) {
+    depth = depth || 0;
+    const tags = parseTLV(s); if (!tags) return [];
+    let lines = [];
+    for (const id of Object.keys(tags)) {
+      const v = tags[id], pad = '  '.repeat(depth);
+      lines.push(pad + id + ' = ' + v);
+      const n = parseInt(id, 10);
+      if ((n >= 26 && n <= 51) || n === 62 || n === 64) lines = lines.concat(flattenTLV(v, depth + 1));
+    }
+    return lines;
+  }
+
+  // Cari ID transaksi di dalam string QR -> kandidat alamat gambar Midtrans (diverifikasi dengan memuat gambarnya)
+  function midtransCandidates(text) {
+    const out = [];
+    (text.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi) || [])
+      .forEach(id => out.push(MIDTRANS_API + '/v2/qris/' + id + '/qr-code'));
+    (text.match(/A1\d{14}[A-Za-z0-9]{12}/g) || [])
+      .forEach(id => out.push(MIDTRANS_API + '/v4/qris/' + id + '/qr-code'));
+    return Array.from(new Set(out));
+  }
+  function probeImage(url) {
+    return new Promise(res => {
+      const im = new Image(); let done = false;
+      const fin = ok => { if (!done) { done = true; res(ok); } };
+      im.onload = () => fin(im.naturalWidth > 0); im.onerror = () => fin(false);
+      setTimeout(() => fin(false), 6000); im.src = url;
+    });
+  }
 
   function setResolved(d, generated) {
     resolved = Object.assign({}, d, { generated: !!generated });
@@ -189,7 +224,7 @@
     $('btnProv').classList.toggle('hidden', !generated);
   }
 
-  // Isi QR -> alamat gambar QR. Urutan: URL apa adanya; alamat resmi Midtrans via Worker (jika diisi); lalu dibuat otomatis.
+  // Urutan: URL apa adanya -> alamat resmi Midtrans via Worker -> ID di dalam QR -> alternatif layanan lain
   async function resolveQr(text, isEmv) {
     const seq = ++resolveSeq;
     resolved = null;
@@ -198,33 +233,49 @@
     const show = (t, err) => { box.textContent = t; box.className = 'msg' + (err ? ' err' : ''); };
     if (/^https?:\/\//i.test(text)) { setResolved({ qr_url: text }, false); box.className = 'msg hidden'; return; }
     if (!isEmv) { show('Isi ini bukan string QRIS, jadi dipakai apa adanya.', false); return; }
+    show('Mencari alamat gambar resmi Midtrans\u2026', false);
 
-    // 1) dibuat otomatis dari isi QR (tanpa Worker)
-    setResolved({ qr_url: IMG_PROVIDERS[provIdx](text) }, true);
-    show('Alamat gambar dibuat otomatis dari isi QR (gambar QR yang sama persis). Salin lalu tempel di simulator.', false);
-
-    // 2) bila Worker diisi, utamakan alamat resmi Midtrans
+    let workerNote = '';
+    // a) Worker: cocokkan isi QR dengan order yang dibuat Worker
     const worker = $('workerUrl').value.trim().replace(/\/+$/, '');
-    if (!worker) return;
-    try {
-      const res = await fetch(worker + '/api/sandbox/resolve-qr', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qr: text })
-      });
-      const d = await res.json().catch(() => ({}));
-      if (seq !== resolveSeq) return;
-      if (res.ok && d.qr_url) {
-        setResolved(d, false);
-        const info = [d.order_id, rupiah(d.gross_amount), d.payment_status].filter(Boolean).join(' \u00b7 ');
-        show('Alamat resmi Midtrans ditemukan: ' + info, false);
+    if (worker) {
+      try {
+        const res = await fetch(worker + '/api/sandbox/resolve-qr', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ qr: text })
+        });
+        const d = await res.json().catch(() => ({}));
+        if (seq !== resolveSeq) return;
+        if (res.ok && d.qr_url) {
+          setResolved(d, false);
+          show('Alamat resmi Midtrans ditemukan: ' + [d.order_id, rupiah(d.gross_amount), d.payment_status].filter(Boolean).join(' \u00b7 '), false);
+          return;
+        }
+        workerNote = d.error || ('Worker menjawab HTTP ' + res.status + '.');
+      } catch (e) { workerNote = 'Tidak bisa menghubungi Worker: ' + (e && e.message ? e.message : e); }
+    } else {
+      workerNote = 'Alamat Worker belum diisi.';
+    }
+
+    // b) ID transaksi yang kebetulan ada di dalam string QR
+    for (const c of midtransCandidates(text)) {
+      if (await probeImage(c)) {
+        if (seq !== resolveSeq) return;
+        setResolved({ qr_url: c }, false);
+        show('Alamat Midtrans ditemukan dari isi QR (gambarnya berhasil dimuat).', false);
+        return;
       }
-      // jika tidak ditemukan, tetap pakai alamat yang dibuat otomatis
-    } catch (e) { /* abaikan: tetap pakai alamat yang dibuat otomatis */ }
+    }
+    if (seq !== resolveSeq) return;
+
+    // c) alternatif terakhir
+    setResolved({ qr_url: IMG_PROVIDERS[provIdx](text) }, true);
+    show('Alamat resmi Midtrans tidak bisa ditentukan. ' + workerNote + ' Yang ditampilkan hanya alamat alternatif buatan layanan lain; simulator bisa saja menolaknya.', true);
   }
   $('btnProv').onclick = () => {
     if (!current || !resolved || !resolved.generated) return;
     provIdx = (provIdx + 1) % IMG_PROVIDERS.length;
     setResolved({ qr_url: IMG_PROVIDERS[provIdx](current) }, true);
-    setMsg('Penyedia gambar diganti. Salin alamat baru lalu tempel di simulator.', false);
+    setMsg('Penyedia gambar alternatif diganti.', false);
   };
 
   function showResult(text) {
@@ -232,6 +283,7 @@
     current = String(text || '').trim();
     const a = analyze(current);
     $('raw').value = current;
+    $('tlvBox').textContent = a.isEmv ? flattenTLV(current).join('\n') : '(bukan format QRIS)';
     const kv = [];
     if (a.isEmv) {
       kv.push(['Jenis', a.dynamic === true ? 'QRIS dinamis' : a.dynamic === false ? 'QRIS statis' : 'QRIS']);

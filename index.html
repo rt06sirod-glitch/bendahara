@@ -188,6 +188,8 @@ th.r{text-align:right}
 .pos-search-box input{padding-left:42px;font-size:15px;height:48px;border-radius:12px;box-shadow:0 2px 6px rgba(0,0,0,.03)}
 .pos-search-box .ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mut)}
 .pos-search-box .clear-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);border:0;background:none;color:var(--mut);cursor:pointer;padding:6px;font-size:14px}
+/* Saran warga: tepat di bawah kotak pencarian, tidak menutupinya */
+#kposDrop .pos-dropdown{position:absolute;left:0;right:0;top:calc(100% + 6px);max-height:min(320px,45vh);overflow-y:auto;z-index:60}
 .pos-dropdown{border:1px solid var(--line);border-radius:14px;background:#fff;max-height:300px;overflow-y:auto;box-shadow:0 14px 34px rgba(0,0,0,.1);position:absolute;left:20px;right:20px;top:76px;z-index:40}
 .pos-drop-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:0;background:none;width:100%;text-align:left;cursor:pointer;border-bottom:1px solid var(--line)}
 .pos-drop-item:last-child{border-bottom:0}
@@ -1441,7 +1443,7 @@ const ui = {
   kqpos: '', 
   kposWid: null, 
   kposSel: new Set(), 
-  kposMethod: 'midtrans', // 'midtrans' | 'cash'
+  kposMethod: 'midtrans', // hanya QRIS (Midtrans) untuk saat ini
   kposCash: 0, 
   kposPin: '',
   kposTab: 'pos', // 'pos' | 'history' | 'settings'
@@ -1717,7 +1719,7 @@ function kasirPage() {
     body = kasirMainBody();
   }
 
-  return head('Kasir Pos', 'Pembayaran iuran langsung via QRIS/Midtrans dan Tunai', act) + subnav + body;
+  return head('Kasir Pos', 'Pembayaran iuran langsung via QRIS', act) + subnav + body;
 }
 
 function kasirMainBody() {
@@ -1741,13 +1743,8 @@ function kasirMainBody() {
   const countTambahan = tambahanDues.filter(d => ui.kposSel.has(d.key)).length;
   const selectedCount = countPrimary + countSecondary + countTambahan;
 
-  // Hitung kembalian tunai
-  const cashGiven = Number(ui.kposCash) || 0;
-  const cashChange = cashGiven - grandTotal;
-
   // Pencarian Warga
   const q = (ui.kqpos || '').trim();
-  const searchMatches = q ? S.warga.filter(w => matchWarga(w, q)).slice(0, 10) : [];
 
   // JIKA WARGA BELUM DIPILIH: TAMPILKAN HERO LANDING PAGE ANIMASI DENGAN SEARCHBOX BESAR
   if (!selectedWarga) {
@@ -1761,7 +1758,7 @@ function kasirMainBody() {
           Bayar Iuran Warga <span class="gradient-text">Mudah &amp; Instan</span>
         </h1>
         <p class="hero-subtitle">
-          Cari nomor rumah atau nama Anda untuk melihat rincian tagihan kas, keamanan dayak, dan iuran kegiatan. Bayar langsung dengan QRIS atau Tunai di pos.
+          Cari nomor rumah atau nama Anda untuk melihat rincian tagihan kas, keamanan dayak, dan iuran kegiatan. Bayar langsung dengan QRIS.
         </p>
 
         <div class="hero-search-card">
@@ -1771,7 +1768,8 @@ function kasirMainBody() {
           <div class="pos-search-box">
             <svg class="search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
             <input id="kposSearchInput" data-s="kqpos" value="${esc(ui.kqpos)}" placeholder="Ketik nomor rumah (misal: A1, B14, C7, D10) atau nama..." autocomplete="off" autofocus>
-            ${ui.kqpos ? `<button class="clear-btn" data-a="kposClearSearch">✕</button>` : ''}
+            <button class="clear-btn" id="kposClearBtn" data-a="kposClearSearch" style="${ui.kqpos ? '' : 'display:none'}">✕</button>
+            <div id="kposDrop">${kposDropHtml(q)}</div>
           </div>
 
           <div class="hero-chips">
@@ -1783,25 +1781,6 @@ function kasirMainBody() {
             <button class="hero-chip" data-a="kposFilterBlock" data-b="E">Blok E</button>
           </div>
 
-          ${q ? `
-            <div class="pos-dropdown" style="top:92px;left:24px;right:24px">
-              ${searchMatches.length ? searchMatches.map(w => {
-                const un = unpaidOf(w);
-                return `
-                  <button class="pos-drop-item" data-a="kposSelectW" data-w="${w.id}">
-                    <span class="badge-addr">${esc(w.alamat || '–')}</span>
-                    <div class="info">
-                      <b>${esc(w.nama)}</b>
-                      <small>${STATUS_LABEL[w.status]} · ${esc(w.wa || 'Tanpa WA')}</small>
-                    </div>
-                    <div class="debt">
-                      ${un > 0 ? `<b>${rp(un)}</b><small>Tunggakan</small>` : '<span class="okt">✓ Lunas</span>'}
-                    </div>
-                  </button>
-                `;
-              }).join('') : '<div style="padding:18px;text-align:center;color:var(--mut)">Tidak ada warga yang cocok dengan pencarian Anda</div>'}
-            </div>
-          ` : ''}
         </div>
       </div>
     `;
@@ -1860,65 +1839,28 @@ function kasirMainBody() {
             </div>
           </div>
 
-          <div class="lbl" style="margin-top:0">Pilih Metode Pembayaran</div>
+          <div class="lbl" style="margin-top:0">Metode Pembayaran</div>
           <div class="pos-tabs">
-            <button class="pos-tab-btn ${ui.kposMethod === 'midtrans' ? 'on' : ''}" data-a="kposSetMethod" data-m="midtrans">
-              ${ico('qr', 18)}<span>Midtrans (QRIS/VA)</span>
-            </button>
-            <button class="pos-tab-btn ${ui.kposMethod === 'cash' ? 'on' : ''}" data-a="kposSetMethod" data-m="cash">
-              ${ico('wallet', 18)}<span>Tunai di Pos</span>
+            <button class="pos-tab-btn on" type="button" style="cursor:default">
+              ${ico('qr', 18)}<span>QRIS</span>
             </button>
           </div>
 
-          ${ui.kposMethod === 'midtrans' ? `
-            <div>
-              <div class="pos-channel-badge">
-                <span class="pos-ch">QRIS</span>
-                <span class="pos-ch">GoPay</span>
-                <span class="pos-ch">ShopeePay</span>
-                <span class="pos-ch">BCA VA</span>
-                <span class="pos-ch">Mandiri</span>
-                <span class="pos-ch">BRI</span>
-              </div>
-              <p class="hint" style="margin:0 0 16px;font-size:12.5px">
-                Scan kode QRIS di layar atau bayar via Mobile Banking. Tagihan otomatis terverifikasi lunas secara instan.
-              </p>
-              <button class="pos-btn-pay midtrans" data-a="kposSubmitMidtrans" ${!selectedWarga || grandTotal <= 0 ? 'disabled' : ''}>
-                ${ico('qr', 22)} Bayar via Midtrans (QRIS)
-              </button>
+          <div>
+            <div class="pos-channel-badge">
+              <span class="pos-ch">QRIS</span>
+              <span class="pos-ch">GoPay</span>
+              <span class="pos-ch">ShopeePay</span>
+              <span class="pos-ch">DANA</span>
+              <span class="pos-ch">OVO</span>
             </div>
-          ` : `
-            <div>
-              <label class="lbl" style="margin-top:0">Uang Diterima dari Warga</label>
-              <div class="pos-cash-input">
-                <span>Rp</span>
-                <input id="kposCashInput" type="number" inputmode="numeric" value="${ui.kposCash || ''}" placeholder="0" data-c="kposCash">
-              </div>
-
-              <div class="pos-quick-cash">
-                <button data-a="kposQuickCash" data-v="${grandTotal}">Uang Pas</button>
-                <button data-a="kposQuickCash" data-v="50000">Rp 50rb</button>
-                <button data-a="kposQuickCash" data-v="100000">Rp 100rb</button>
-                <button data-a="kposQuickCash" data-v="200000">Rp 200rb</button>
-              </div>
-
-              <div class="pos-change-box ${cashChange >= 0 && cashGiven >= grandTotal ? 'ok' : 'short'}">
-                <div>
-                  <small>${cashChange < 0 ? 'Uang Masih Kurang' : 'Uang Kembalian'}</small>
-                  <b>${cashChange < 0 ? rp(Math.abs(cashChange)) : rp(cashChange)}</b>
-                </div>
-                <div>
-                  <span class="badge ${cashChange >= 0 && cashGiven >= grandTotal ? 'b-tetap' : 'b-singgah'}">
-                    ${cashChange >= 0 && cashGiven >= grandTotal ? 'Cukup' : 'Kurang'}
-                  </span>
-                </div>
-              </div>
-
-              <button class="pos-btn-pay cash" data-a="kposSubmitCash" ${!selectedWarga || grandTotal <= 0 || cashGiven < grandTotal ? 'disabled' : ''}>
-                ${ico('check', 22)} Konfirmasi Pembayaran Tunai
-              </button>
-            </div>
-          `}
+            <p class="hint" style="margin:0 0 16px;font-size:12.5px">
+              Scan kode QRIS di layar dengan e-wallet atau mobile banking. Tagihan otomatis terverifikasi lunas setelah pembayaran berhasil.
+            </p>
+            <button class="pos-btn-pay midtrans" data-a="kposSubmitMidtrans" ${!selectedWarga || grandTotal <= 0 ? 'disabled' : ''}>
+              ${ico('qr', 22)} Bayar via QRIS
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -2400,14 +2342,116 @@ function dashboard() {
 /* ---------- Pencarian fleksibel: nama, blok / no. rumah, WhatsApp, status ---------- */
 const alnum = s => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 const stripAddr = s => String(s || '').toLowerCase().replace(/\b(blok|block|no|nomor|rt|rw|jl|jalan|rumah)\b\.?/g, ' ');
+/* Saran pencarian warga (tanpa nominal). Diperbarui langsung tanpa render() agar kursor tidak hilang. */
+function kposDropHtml(q) {
+  q = (q || '').trim();
+  if (!q) return '';
+  const all = searchWarga(q), LIM = 10, matches = all.slice(0, LIM);
+  return `
+    <div class="pos-dropdown">
+      ${matches.length ? matches.map(w => `
+        <button class="pos-drop-item" data-a="kposSelectW" data-w="${w.id}">
+          <span class="badge-addr">${esc(w.alamat || '–')}</span>
+          <div class="info">
+            <b>${esc(w.nama)}</b>
+            <small>${STATUS_LABEL[w.status] || ''} · ${esc(w.wa || 'Tanpa WA')}</small>
+          </div>
+        </button>
+      `).join('') : '<div style="padding:18px;text-align:center;color:var(--mut)">Tidak ada warga yang cocok dengan pencarian Anda</div>'}
+      ${all.length > LIM ? `<div style="padding:8px 14px;text-align:center;color:var(--mut);font-size:12px">+${all.length - LIM} warga lain, ketik lebih spesifik untuk mempersempit</div>` : ''}
+    </div>`;
+}
+function kposRefreshSearch() {
+  const drop = document.getElementById('kposDrop');
+  if (drop) drop.innerHTML = kposDropHtml(ui.kqpos);
+  const clr = document.getElementById('kposClearBtn');
+  if (clr) clr.style.display = ui.kqpos ? '' : 'none';
+}
+
+/* Pencarian warga fleksibel: no. rumah (A1, a 1, A01, blok A no 1), nama lengkap/sebagian,
+   kata di tengah nama, typo ringan, nomor WhatsApp, dan status. Hasil diberi skor lalu diurutkan. */
+const normAddr = s => alnum(stripAddr(s)).replace(/([a-z])0+(\d)/g, '$1$2');
+function lev(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    let rowMin = i;
+    for (let j = 1; j <= b.length; j++) {
+      const v = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      cur[j] = v; if (v < rowMin) rowMin = v;
+    }
+    if (rowMin > max) return max + 1;
+    prev = cur;
+  }
+  return prev[b.length];
+}
+function scoreWarga(w, q) {
+  const raw = String(q || '').trim();
+  if (!raw) return 1;
+  const toks = stripAddr(raw).toLowerCase().split(/[\s,]+/).map(alnum).filter(Boolean);
+  if (!toks.length) return 1;
+
+  const addr = normAddr(w.alamat);
+  const words = String(w.nama || '').toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+  const nameJoined = words.join('');
+  const wa = String(w.wa || '').replace(/\D/g, '');
+  const status = String(STATUS_LABEL[w.status] || w.status || '').toLowerCase();
+
+  let total = 0;
+  for (const t0 of toks) {
+    const t = t0.replace(/([a-z])0+(\d)/g, '$1$2');
+    let best = 0;
+    // nomor rumah
+    if (addr) {
+      if (addr === t) best = Math.max(best, 100);
+      else if (addr.startsWith(t)) best = Math.max(best, 70);
+      else if (addr.includes(t)) best = Math.max(best, 40);
+    }
+    // nama: kata utuh, awalan kata, mengandung, lintas kata
+    for (const wd of words) {
+      if (wd === t) best = Math.max(best, 60);
+      else if (wd.startsWith(t)) best = Math.max(best, 50);
+      else if (wd.includes(t)) best = Math.max(best, 35);
+    }
+    if (nameJoined.includes(t)) best = Math.max(best, 30);
+    // typo ringan (1 huruf salah/kurang/lebih; 2 untuk kata panjang)
+    if (!best && t.length >= 4 && /[a-z]/.test(t)) {
+      const max = t.length >= 8 ? 2 : 1;
+      for (const wd of words) {
+        if (lev(t, wd, max) <= max || lev(t, wd.slice(0, t.length), max) <= max) { best = 20; break; }
+      }
+    }
+    // WhatsApp & status
+    if (!best && /^\d{3,}$/.test(t) && wa.includes(t)) best = 25;
+    if (!best && t.length >= 2 && status.startsWith(t)) best = 15;
+    if (!best) return 0;          // setiap kata pencarian harus cocok di salah satu bagian
+    total += best;
+  }
+  // bonus bila seluruh isian cocok persis dengan no. rumah (mis. "a 1" => A1)
+  const whole = normAddr(raw);
+  if (whole && addr === whole) total += 150;
+  else if (whole && addr.startsWith(whole)) total += 20;
+  return total;
+}
+/* Bila isian berbentuk no. rumah (huruf+angka, mis. "a1", "A 1", "blok A no 1") dan ada rumah yang
+   diawali kode itu, tampilkan hanya rumah-rumah tersebut agar tidak bercampur dengan hasil nama. */
+function addrOnlyKey(q) {
+  const k = normAddr(q);
+  return /^[a-z]+\d+$/.test(k) && S.warga.some(w => normAddr(w.alamat).startsWith(k)) ? k : '';
+}
 function matchWarga(w, q) {
-  const toks = String(q || '').toLowerCase().split(/[\s,]+/).filter(Boolean);
-  if (!toks.length) return true;
-  const hay = [w.nama, w.alamat, STATUS_LABEL[w.status]].join(' ').toLowerCase();
-  const compact = alnum(hay), addr = alnum(stripAddr(w.alamat)), wa = String(w.wa || '').replace(/\D/g, '');
-  const whole = alnum(q);
-  if (whole && (addr.includes(whole) || compact.includes(whole))) return true;
-  return toks.every(t => { const c = alnum(t); return hay.includes(t) || (c && (compact.includes(c) || addr.includes(c) || (/^\d{3,}$/.test(c) && wa.includes(c)))); });
+  const k = addrOnlyKey(q);
+  if (k) return normAddr(w.alamat).startsWith(k);
+  return scoreWarga(w, q) > 0;
+}
+function searchWarga(q) {
+  const k = addrOnlyKey(q);
+  return S.warga
+    .map(w => ({ w, s: k ? (normAddr(w.alamat) === k ? 200 : normAddr(w.alamat).startsWith(k) ? 100 : 0) : scoreWarga(w, q) }))
+    .filter(x => x.s > 0)
+    .sort((x, y) => y.s - x.s || String(x.w.alamat || '').localeCompare(String(y.w.alamat || ''), 'id', { numeric: true }))
+    .map(x => x.w);
 }
 
 /* ---------- Data warga ---------- */
@@ -3104,7 +3148,18 @@ const ACT = {
   },
 
   kposSetTab(el) { ui.kposTab = el.dataset.v; render(); },
-  kposClearSearch() { ui.kqpos = ''; render(); },
+  kposClearSearch() {
+    ui.kqpos = '';
+    const inp = document.getElementById('kposSearchInput');
+    if (inp) { inp.value = ''; inp.focus(); }
+    kposRefreshSearch();
+  },
+  kposFilterBlock(el) {
+    ui.kqpos = el.dataset.b || '';
+    const inp = document.getElementById('kposSearchInput');
+    if (inp) { inp.value = ui.kqpos; inp.focus(); }
+    kposRefreshSearch();
+  },
   kposSelectW(el) {
     const wid = el.dataset.w;
     const w = S.warga.find(x => x.id === wid);
@@ -3167,14 +3222,6 @@ const ACT = {
     }
     render();
   },
-  kposSetMethod(el) {
-    ui.kposMethod = el.dataset.m;
-    render();
-  },
-  kposQuickCash(el) {
-    ui.kposCash = Number(el.dataset.v) || 0;
-    render();
-  },
   kposSaveSettings() {
     posCfg.workerUrl = ($('#cfgWorkerUrl').value || '').trim().replace(/\/+$/, '');
     posCfg.clientKey = ($('#cfgClientKey').value || '').trim();
@@ -3206,85 +3253,6 @@ const ACT = {
     } catch(e) {
       if (resBox) resBox.innerHTML = `<span style="color:var(--no)">✗ Gagal terhubung: ${esc(e.message)}. Pastikan Worker sudah di-deploy dan URL benar.</span>`;
     }
-  },
-  async kposSubmitCash() {
-    const w = S.warga.find(x => x.id === ui.kposWid);
-    if (!w) return;
-    const dues = getWargaUnpaidDues(w).filter(d => ui.kposSel.has(d.key));
-    if (!dues.length) { toast('Pilih minimal satu tagihan'); return; }
-
-    const grossAmount = dues.reduce((s, x) => s + x.amt, 0);
-    const cashGiven = Number(ui.kposCash) || 0;
-    if (cashGiven < grossAmount) {
-      toast('Uang tunai diterima kurang dari total tagihan!');
-      return;
-    }
-
-    const orderId = 'POS-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
-    const receiptCode = 'RCP-' + Math.random().toString(36).slice(2, 8).toUpperCase();
-    const orderData = {
-      order_id: orderId,
-      warga_id: w.id,
-      warga_nama: w.nama,
-      warga_alamat: w.alamat || '-',
-      gross_amount: grossAmount,
-      payment_method: 'cash',
-      payment_status: 'settlement',
-      payment_type: 'cash',
-      items: dues,
-      items_detail: dues,
-      cashier_name: posCfg.cashierName,
-      receipt_code: receiptCode,
-      settled_at: new Date().toISOString(),
-      created_at: new Date().toISOString()
-    };
-
-    // 1. Jika terhubung ke Cloudflare Worker, kirim ke backend
-    if (posCfg.workerUrl) {
-      try {
-        await fetch(posCfg.workerUrl + '/api/kasir/create-payment', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            warga_id: w.id,
-            warga_nama: w.nama,
-            warga_alamat: w.alamat,
-            items: dues,
-            payment_method: 'cash',
-            cashier_name: posCfg.cashierName
-          })
-        });
-      } catch(e) {
-        console.warn('Worker sync warning, falling back to local Supabase:', e);
-      }
-    }
-
-    // 2. Update local state & Supabase langsung
-    const today = todayStr();
-    dues.forEach(it => {
-      S.paid[it.key] = { d: today, a: it.amt };
-      S.trx.push({
-        id: uid('x'),
-        tipe: 'masuk',
-        tgl: today,
-        kat: it.type === 'kas' ? 'Kas Warga' : it.type === 'dayak' ? 'Gaji Dayak' : 'Tambahan',
-        ket: `${w.nama} (${w.alamat || '-'}) · ${it.label} [TUNAI - ${orderId}]`,
-        jml: it.amt,
-        pos: it.pos
-      });
-    });
-
-    save();
-    savePosOrderHistory(orderData);
-
-    // Reset Kasir Form
-    ui.kposWid = null;
-    ui.kposSel = new Set();
-    ui.kposCash = 0;
-    render();
-
-    toast('Pembayaran tunai berhasil dicatat!');
-    openNotaModal(orderData);
   },
   async kposSubmitMidtrans() {
     const w = S.warga.find(x => x.id === ui.kposWid);
@@ -3515,33 +3483,10 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]'); if (!el || !ACT[el.dataset.a]) return;
   ACT[el.dataset.a](el, e);
 });
-document.addEventListener('input', e => {
-  const el = e.target.closest('[data-c="kposCash"]');
-  if (el) {
-    ui.kposCash = Number(el.value) || 0;
-    // update change box without full re-render for smooth typing
-    const w = S.warga.find(x => x.id === ui.kposWid);
-    if (w) {
-      const dues = getWargaUnpaidDues(w).filter(d => ui.kposSel.has(d.key));
-      const tot = dues.reduce((s, x) => s + x.amt, 0);
-      const chg = ui.kposCash - tot;
-      const box = document.querySelector('.pos-change-box');
-      if (box) {
-        box.className = 'pos-change-box ' + (chg >= 0 && ui.kposCash >= tot ? 'ok' : 'short');
-        box.querySelector('small').textContent = chg < 0 ? 'Uang Masih Kurang' : 'Uang Kembalian';
-        box.querySelector('b').textContent = rp(Math.abs(chg));
-        box.querySelector('.badge').className = 'badge ' + (chg >= 0 && ui.kposCash >= tot ? 'b-tetap' : 'b-singgah');
-        box.querySelector('.badge').textContent = chg >= 0 && ui.kposCash >= tot ? 'Cukup' : 'Kurang';
-      }
-      const btn = document.querySelector('.pos-btn-pay.cash');
-      if (btn) btn.disabled = (tot <= 0 || ui.kposCash < tot);
-    }
-  }
-});
 document.addEventListener('change', e => { const el = e.target.closest('[data-c]'); if (el && CH[el.dataset.c]) CH[el.dataset.c](el); });
 document.addEventListener('input', e => {
   const el = e.target.closest('[data-s]'); if (!el || !el.dataset.s) return;
-  if (el.dataset.s === 'kqpos') { ui.kqpos = el.value; render(); }
+  if (el.dataset.s === 'kqpos') { ui.kqpos = el.value; kposRefreshSearch(); }
   else if (el.dataset.s === 'q') { ui.q = el.value; renderBody(); }
   else if (el.dataset.s === 'wq') { ui.wq = el.value; $('#wBody').innerHTML = wargaTable(); }
   else if (el.dataset.s === 'kq') { ui.kq = el.value; ui.lim = 100; renderK(); }

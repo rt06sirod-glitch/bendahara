@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scan QRIS (Sandbox Midtrans)</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --ink:#0f172a; --mut:#64748b; --line:#e2e8f0;
+    --acc:#2563eb; --acc-s:#eaf1ff; --ok:#16a34a; --ok-s:#e8f8ee; --no:#dc2626; --no-s:#fdecec;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1220; --card:#121a2c; --ink:#e8edf7; --mut:#94a3b8; --line:#243049;
+      --acc:#5b8dff; --acc-s:#16264a; --ok:#34d399; --ok-s:#0f2a22; --no:#f87171; --no-s:#33161a;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  body{padding:max(16px,env(safe-area-inset-top)) 16px max(24px,env(safe-area-inset-bottom))}
+  .wrap{max-width:520px;margin:0 auto}
+  h1{font-size:20px;margin:6px 0 4px;letter-spacing:-.3px}
+  p.sub{margin:0 0 16px;color:var(--mut);font-size:13.5px;line-height:1.5}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+  .cam{position:relative;border-radius:14px;overflow:hidden;background:#000;aspect-ratio:1/1}
+  .cam video{width:100%;height:100%;object-fit:cover;display:block}
+  .cam .frame{position:absolute;inset:18%;border:3px solid rgba(255,255,255,.9);border-radius:18px;box-shadow:0 0 0 999px rgba(0,0,0,.35);pointer-events:none}
+  .cam .hint{position:absolute;left:0;right:0;bottom:10px;text-align:center;color:#fff;font-size:12.5px;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+  .cam .idle{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:14px;text-align:center;padding:20px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  button,.btn{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--ink);padding:11px 14px;border-radius:12px;cursor:pointer}
+  button.primary{background:var(--acc);border-color:var(--acc);color:#fff}
+  button.pay{background:var(--ok);border-color:var(--ok);color:#fff;width:100%;font-size:16px;padding:15px}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  label.lbl{display:block;font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.5px;margin:0 0 6px}
+  input[type=text],textarea{width:100%;font:inherit;font-size:13.5px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  textarea{min-height:84px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;word-break:break-all}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 10px;font-size:14px;margin:10px 0}
+  .kv span:nth-child(odd){color:var(--mut)}
+  .badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700}
+  .badge.ok{background:var(--ok-s);color:var(--ok)} .badge.no{background:var(--no-s);color:var(--no)}
+  .msg{font-size:13px;line-height:1.5;border-radius:10px;padding:10px 12px;margin-top:10px;background:var(--acc-s);color:var(--ink)}
+  .msg.err{background:var(--no-s);color:var(--no)}
+  .steps{margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.6;color:var(--mut)}
+  details{margin-top:6px} summary{cursor:pointer;font-weight:600;font-size:13.5px}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Scan QRIS &rarr; Bayar di Simulator</h1>
+  <p class="sub">Khusus <b>Sandbox Midtrans</b>. Arahkan kamera ke QR pembayaran, lalu tekan <b>Bayar</b>. QR hasil scan otomatis disalin dan Simulator QRIS Midtrans terbuka.</p>
+
+  <div class="card" id="scanCard">
+    <div class="cam">
+      <video id="video" playsinline muted></video>
+      <div class="frame" id="frame" style="display:none"></div>
+      <div class="idle" id="idle">Tekan &ldquo;Mulai Kamera&rdquo; lalu arahkan ke QR</div>
+      <div class="hint hidden" id="hint">Mencari QR&hellip;</div>
+    </div>
+    <div class="row">
+      <button class="primary" id="btnStart">Mulai Kamera</button>
+      <button id="btnStop" class="hidden">Berhenti</button>
+      <button id="btnFlip" class="hidden">Balik Kamera</button>
+      <label class="btn" for="fileIn">Unggah Gambar QR</label>
+      <input type="file" id="fileIn" accept="image/*" class="hidden">
+    </div>
+    <div class="msg err hidden" id="camErr"></div>
+    <canvas id="work" class="hidden"></canvas>
+  </div>
+
+  <div class="card hidden" id="resCard">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b>QR terbaca</b><span class="badge" id="crcBadge"></span>
+    </div>
+    <div class="kv" id="kv"></div>
+    <label class="lbl" for="raw">Isi QR (string QRIS)</label>
+    <textarea id="raw" readonly></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="btnCopy">Salin</button>
+      <button id="btnAgain">Scan Ulang</button>
+    </div>
+    <div style="margin-top:12px"><button class="pay" id="btnPay">Bayar di Simulator Midtrans</button></div>
+    <div class="msg" id="payMsg">
+      Tombol ini menyalin isi QR lalu membuka Simulator QRIS Midtrans di tab baru.
+      Di sana <b>tempel</b> (tahan lama, pilih Tempel) lalu klik <b>Scan QR</b>.
+    </div>
+  </div>
+
+  <div class="card">
+    <details>
+      <summary>Pengaturan &amp; input manual</summary>
+      <div style="margin-top:10px">
+        <label class="lbl" for="simUrl">Alamat Simulator QRIS</label>
+        <input type="text" id="simUrl" value="https://simulator.sandbox.midtrans.com/qris/index">
+        <p class="sub" style="margin:6px 0 12px">Akun sandbox lama atau BI-SNAP mungkin memakai alamat lain (misalnya <code>/openapi/qris/index</code>). Ubah di sini bila perlu.</p>
+        <label class="lbl" for="manual">Tempel isi QR / URL gambar QR secara manual</label>
+        <textarea id="manual" placeholder="Tempel string QRIS atau URL gambar QR (qr_url)"></textarea>
+        <div class="row"><button id="btnManual">Proses</button></div>
+      </div>
+    </details>
+    <details>
+      <summary>Kalau simulator meminta URL gambar QR</summary>
+      <ol class="steps">
+        <li>Dokumentasi Midtrans menyebut simulator menerima <b>URL gambar QR</b>, sedangkan sebagian sumber menyebut string mentah. Coba string hasil scan dulu.</li>
+        <li>Kalau ditolak, pakai <code>qr_url</code> dari respons pembuatan transaksi (di kasir: tautan &ldquo;Tes Sandbox&rdquo; pada pop-up QRIS) dan tempel di kolom manual di atas, atau langsung di simulator.</li>
+      </ol>
+    </details>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script>
+(function () {
+  const $ = id => document.getElementById(id);
+  const video = $('video'), work = $('work'), ctx = work.getContext('2d', { willReadFrequently: true });
+  let stream = null, rafId = 0, facing = 'environment', scanning = false, lastTick = 0, detector = null;
+
+  /* ---------- Penyimpanan alamat simulator (aman jika storage diblokir) ---------- */
+  try { const v = localStorage.getItem('sim_url'); if (v) $('simUrl').value = v; } catch (e) {}
+  $('simUrl').addEventListener('change', () => { try { localStorage.setItem('sim_url', $('simUrl').value.trim()); } catch (e) {} });
+
+  /* ---------- EMV / QRIS ---------- */
+  function crc16(str) {
+    let crc = 0xFFFF;
+    for (let i = 0; i < str.length; i++) {
+      crc ^= str.charCodeAt(i) << 8;
+      for (let b = 0; b < 8; b++) crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) & 0xFFFF : (crc << 1) & 0xFFFF;
+    }
+    return crc.toString(16).toUpperCase().padStart(4, '0');
+  }
+  function parseTLV(s) {
+    const out = {}; let i = 0;
+    while (i + 4 <= s.length) {
+      const id = s.substr(i, 2), len = parseInt(s.substr(i + 2, 2), 10);
+      if (isNaN(len) || i + 4 + len > s.length) return null;
+      out[id] = s.substr(i + 4, len); i += 4 + len;
+    }
+    return out;
+  }
+  function analyze(text) {
+    const t = String(text || '').trim();
+    const info = { raw: t, isEmv: false, crcOk: false, merchant: '', city: '', amount: '', dynamic: null };
+    if (!/^0002/.test(t)) return info;
+    const tags = parseTLV(t);
+    if (!tags || !tags['63']) return info;
+    info.isEmv = true;
+    info.crcOk = crc16(t.slice(0, t.length - 4)) === t.slice(-4).toUpperCase();
+    info.merchant = tags['59'] || ''; info.city = tags['60'] || ''; info.amount = tags['54'] || '';
+    info.dynamic = tags['01'] === '12' ? true : tags['01'] === '11' ? false : null;
+    return info;
+  }
+  const rupiah = v => { const n = Number(v); return isFinite(n) && n > 0 ? 'Rp ' + n.toLocaleString('id-ID') : ''; };
+
+  /* ---------- Tampilan hasil ---------- */
+  let current = '';
+  function showResult(text) {
+    stopCamera();
+    current = String(text || '').trim();
+    const a = analyze(current);
+    $('raw').value = current;
+    const kv = [];
+    if (a.isEmv) {
+      kv.push(['Jenis', a.dynamic === true ? 'QRIS dinamis' : a.dynamic === false ? 'QRIS statis' : 'QRIS']);
+      if (a.merchant) kv.push(['Merchant', a.merchant]);
+      if (a.city) kv.push(['Kota', a.city]);
+      if (rupiah(a.amount)) kv.push(['Nominal', rupiah(a.amount)]);
+    } else {
+      kv.push(['Jenis', /^https?:\/\//i.test(current) ? 'Tautan / URL gambar QR' : 'Teks (bukan format QRIS)']);
+    }
+    $('kv').innerHTML = kv.map(([k, v]) => '<span></span><span></span>').join('');
+    const cells = $('kv').children;
+    kv.forEach(([k, v], i) => { cells[i * 2].textContent = k; cells[i * 2 + 1].textContent = v; });
+    const b = $('crcBadge');
+    if (a.isEmv) { b.textContent = a.crcOk ? 'CRC valid' : 'CRC tidak cocok'; b.className = 'badge ' + (a.crcOk ? 'ok' : 'no'); }
+    else { b.textContent = ''; b.className = 'badge'; }
+    $('resCard').classList.remove('hidden');
+    $('scanCard').classList.add('hidden');
+    if (navigator.vibrate) { try { navigator.vibrate(80); } catch (e) {} }
+    // Coba salin langsung (sebagian browser menolak tanpa ketukan; tombol Bayar tetap menyalin ulang)
+    copyText(current).catch(() => {});
+  }
+  function resetScan() {
+    $('resCard').classList.add('hidden');
+    $('scanCard').classList.remove('hidden');
+    $('payMsg').className = 'msg';
+    startCamera();
+  }
+
+  /* ---------- Clipboard ---------- */
+  async function copyText(t) {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return; }
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    const ok = document.execCommand('copy'); document.body.removeChild(ta);
+    if (!ok) throw new Error('copy gagal');
+  }
+
+  $('btnCopy').onclick = async () => {
+    try { await copyText(current); setMsg('Isi QR disalin.', false); }
+    catch (e) { setMsg('Gagal menyalin otomatis. Tekan dan tahan kotak teks di atas, lalu pilih Salin.', true); }
+  };
+  $('btnPay').onclick = async () => {
+    let copied = true;
+    try { await copyText(current); } catch (e) { copied = false; }
+    const url = $('simUrl').value.trim() || 'https://simulator.sandbox.midtrans.com/qris/index';
+    const w = window.open(url, '_blank', 'noopener');
+    if (!w) { setMsg('Pop-up diblokir. Buka simulator secara manual: ' + url, true); return; }
+    setMsg(copied
+      ? 'Isi QR sudah disalin. Di tab simulator, tempel lalu klik Scan QR.'
+      : 'Simulator dibuka, tetapi QR belum tersalin. Tekan Salin dulu, lalu tempel di simulator.', !copied);
+  };
+  $('btnAgain').onclick = resetScan;
+  function setMsg(t, err) { const m = $('payMsg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }
+
+  /* ---------- Kamera & pemindaian ---------- */
+  function camError(t) { const e = $('camErr'); e.textContent = t; e.classList.toggle('hidden', !t); }
+
+  async function startCamera() {
+    camError('');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      camError('Browser ini tidak mendukung akses kamera. Gunakan Chrome/Safari terbaru, atau unggah gambar QR.');
+      return;
+    }
+    if (!window.isSecureContext) {
+      camError('Kamera hanya bisa dipakai lewat HTTPS (atau localhost). Buka halaman ini lewat alamat https://.');
+      return;
+    }
+    try {
+      stopCamera();
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false
+      });
+      video.srcObject = stream;
+      await video.play();
+      $('idle').classList.add('hidden'); $('frame').style.display = ''; $('hint').classList.remove('hidden');
+      $('btnStart').classList.add('hidden'); $('btnStop').classList.remove('hidden'); $('btnFlip').classList.remove('hidden');
+      if (!detector && 'BarcodeDetector' in window) {
+        try { detector = new BarcodeDetector({ formats: ['qr_code'] }); } catch (e) { detector = null; }
+      }
+      scanning = true; lastTick = 0; loop();
+    } catch (e) {
+      const n = e && e.name;
+      camError(n === 'NotAllowedError' ? 'Izin kamera ditolak. Izinkan kamera di pengaturan browser lalu coba lagi.'
+        : n === 'NotFoundError' ? 'Kamera tidak ditemukan di perangkat ini.'
+        : 'Tidak bisa membuka kamera: ' + (e && e.message ? e.message : e));
+    }
+  }
+  function stopCamera() {
+    scanning = false; cancelAnimationFrame(rafId);
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    video.srcObject = null;
+    $('idle').classList.remove('hidden'); $('frame').style.display = 'none'; $('hint').classList.add('hidden');
+    $('btnStart').classList.remove('hidden'); $('btnStop').classList.add('hidden'); $('btnFlip').classList.add('hidden');
+  }
+  async function decodeFrame() {
+    const vw = video.videoWidth, vh = video.videoHeight;
+    if (!vw || !vh) return null;
+    if (detector) {
+      try { const r = await detector.detect(video); if (r && r.length) return r[0].rawValue; } catch (e) { detector = null; }
+    }
+    if (typeof jsQR === 'function') {
+      const s = Math.min(1, 640 / Math.max(vw, vh));
+      work.width = Math.round(vw * s); work.height = Math.round(vh * s);
+      ctx.drawImage(video, 0, 0, work.width, work.height);
+      const img = ctx.getImageData(0, 0, work.width, work.height);
+      const r = jsQR(img.data, img.width, img.height, { inversionAttempts: 'attemptBoth' });
+      if (r && r.data) return r.data;
+    }
+    return null;
+  }
+  function loop(ts) {
+    if (!scanning) return;
+    rafId = requestAnimationFrame(loop);
+    if (ts && ts - lastTick < 140) return;   // ~7x per detik, hemat baterai
+    lastTick = ts || 0;
+    decodeFrame().then(v => { if (v && scanning) showResult(v); }).catch(() => {});
+  }
+
+  $('btnStart').onclick = startCamera;
+  $('btnStop').onclick = stopCamera;
+  $('btnFlip').onclick = () => { facing = facing === 'environment' ? 'user' : 'environment'; startCamera(); };
+
+  /* ---------- Unggah gambar & input manual ---------- */
+  $('fileIn').onchange = e => {
+    const f = e.target.files && e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    camError('');
+    const img = new Image(), url = URL.createObjectURL(f);
+    img.onload = async () => {
+      const s = Math.min(1, 1200 / Math.max(img.width, img.height));
+      work.width = Math.round(img.width * s); work.height = Math.round(img.height * s);
+      ctx.drawImage(img, 0, 0, work.width, work.height);
+      URL.revokeObjectURL(url);
+      let val = null;
+      if ('BarcodeDetector' in window) {
+        try { const d = new BarcodeDetector({ formats: ['qr_code'] }); const r = await d.detect(work); if (r.length) val = r[0].rawValue; } catch (er) {}
+      }
+      if (!val && typeof jsQR === 'function') {
+        const d = ctx.getImageData(0, 0, work.width, work.height);
+        const r = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
+        if (r) val = r.data;
+      }
+      if (val) showResult(val); else camError('QR tidak terbaca dari gambar ini. Coba foto yang lebih jelas.');
+    };
+    img.onerror = () => camError('File gambar tidak bisa dibuka.');
+    img.src = url;
+  };
+  $('btnManual').onclick = () => {
+    const v = $('manual').value.trim();
+    if (!v) { camError('Isi dulu kolom manual.'); return; }
+    camError(''); showResult(v);
+  };
+
+  window.addEventListener('pagehide', stopCamera);
+  document.addEventListener('visibilitychange', () => { if (document.hidden && scanning) stopCamera(); });
+
+  // diekspos untuk pengujian
+  window.__qris = { crc16, parseTLV, analyze };
+})();
+</script>
+</body>
+</html>
